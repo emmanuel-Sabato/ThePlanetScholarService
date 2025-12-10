@@ -52,7 +52,11 @@ app.get('/api/scholarships', async (req, res) => {
 
 app.post('/api/scholarships', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `scholarship-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('scholarships').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -62,7 +66,11 @@ app.post('/api/scholarships', async (req, res) => {
 
 app.delete('/api/scholarships/:id', async (req, res) => {
     try {
-        const result = await db.collection('scholarships').deleteOne({ id: req.params.id });
+        // Try to delete by custom id first, then by MongoDB _id
+        let result = await db.collection('scholarships').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('scholarships').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });
@@ -83,7 +91,11 @@ app.get('/api/services', async (req, res) => {
 
 app.post('/api/services', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `service-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('services').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -93,7 +105,10 @@ app.post('/api/services', async (req, res) => {
 
 app.delete('/api/services/:id', async (req, res) => {
     try {
-        const result = await db.collection('services').deleteOne({ id: req.params.id });
+        let result = await db.collection('services').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('services').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });
@@ -134,7 +149,11 @@ app.get('/api/team', async (req, res) => {
 
 app.post('/api/team', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `team-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('team').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -144,7 +163,10 @@ app.post('/api/team', async (req, res) => {
 
 app.delete('/api/team/:id', async (req, res) => {
     try {
-        const result = await db.collection('team').deleteOne({ id: req.params.id });
+        let result = await db.collection('team').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('team').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });
@@ -165,7 +187,11 @@ app.get('/api/blog', async (req, res) => {
 
 app.post('/api/blog', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `blog-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('blog').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -175,7 +201,10 @@ app.post('/api/blog', async (req, res) => {
 
 app.delete('/api/blog/:id', async (req, res) => {
     try {
-        const result = await db.collection('blog').deleteOne({ id: req.params.id });
+        let result = await db.collection('blog').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('blog').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });
@@ -196,7 +225,11 @@ app.get('/api/faqs', async (req, res) => {
 
 app.post('/api/faqs', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `faq-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('faqs').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -206,7 +239,10 @@ app.post('/api/faqs', async (req, res) => {
 
 app.delete('/api/faqs/:id', async (req, res) => {
     try {
-        const result = await db.collection('faqs').deleteOne({ id: req.params.id });
+        let result = await db.collection('faqs').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('faqs').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });
@@ -227,7 +263,11 @@ app.get('/api/testimonials', async (req, res) => {
 
 app.post('/api/testimonials', async (req, res) => {
     try {
-        const newItem = { ...req.body, createdAt: new Date() };
+        const newItem = {
+            ...req.body,
+            id: req.body.id || `testimonial-${Date.now()}`,
+            createdAt: new Date()
+        };
         const result = await db.collection('testimonials').insertOne(newItem);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
@@ -237,7 +277,10 @@ app.post('/api/testimonials', async (req, res) => {
 
 app.delete('/api/testimonials/:id', async (req, res) => {
     try {
-        const result = await db.collection('testimonials').deleteOne({ id: req.params.id });
+        let result = await db.collection('testimonials').deleteOne({ id: req.params.id });
+        if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
+            result = await db.collection('testimonials').deleteOne({ _id: new ObjectId(req.params.id) });
+        }
         result.deletedCount > 0
             ? res.json({ message: 'Deleted successfully' })
             : res.status(404).json({ error: 'Not found' });

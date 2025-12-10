@@ -127,10 +127,12 @@ export default function AdminPage() {
         }
     }
 
-    async function handleDelete(endpoint, id) {
+    async function handleDelete(endpoint, item) {
         if (!confirm('Are you sure you want to delete this item?')) return
         try {
-            const response = await fetch(`${API_URL}/${endpoint}/${id}`, { method: 'DELETE' })
+            // Use _id if it exists (new items), otherwise use id (migrated items)
+            const deleteId = item._id || item.id
+            const response = await fetch(`${API_URL}/${endpoint}/${deleteId}`, { method: 'DELETE' })
             if (response.ok) {
                 await fetchAll()
                 alert('Deleted successfully!')
@@ -263,7 +265,7 @@ export default function AdminPage() {
                                             <td className="px-4 py-3 text-sm text-slate-600">{item.country}</td>
                                             <td className="px-4 py-3 text-sm text-slate-600">{item.degree}</td>
                                             <td className="px-4 py-3 text-right">
-                                                <button onClick={() => handleDelete('scholarships', item.id)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                                                <button onClick={() => handleDelete('scholarships', item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
                                                     <Trash2 className="h-4 w-4" /> Delete
                                                 </button>
                                             </td>
@@ -308,7 +310,7 @@ export default function AdminPage() {
                                         <p className="text-sm text-slate-600 mt-1">{item.description}</p>
                                         <p className="text-xs text-slate-500 mt-1">Icon: {item.icon}</p>
                                     </div>
-                                    <button onClick={() => handleDelete('services', item.id)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-100 rounded-lg transition">
+                                    <button onClick={() => handleDelete('services', item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-100 rounded-lg transition">
                                         <Trash2 className="h-4 w-4" /> Delete
                                     </button>
                                 </div>
@@ -366,7 +368,7 @@ export default function AdminPage() {
                                             <p className="text-sm text-slate-600 mt-1">{item.bio}</p>
                                             {item.image && <p className="text-xs text-slate-500 mt-1">Image: {item.image}</p>}
                                         </div>
-                                        <button onClick={() => handleDelete('team', item.id)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
+                                        <button onClick={() => handleDelete('team', item)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
@@ -408,7 +410,7 @@ export default function AdminPage() {
                                             <p className="text-sm text-slate-600 mt-1">{item.excerpt}</p>
                                             <p className="text-xs text-slate-500 mt-2">By {item.author} • {item.date}</p>
                                         </div>
-                                        <button onClick={() => handleDelete('blog', item.id)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
+                                        <button onClick={() => handleDelete('blog', item)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
@@ -444,7 +446,7 @@ export default function AdminPage() {
                                             <h3 className="font-semibold text-slate-900">{item.question}</h3>
                                             <p className="text-sm text-slate-600 mt-1">{item.answer}</p>
                                         </div>
-                                        <button onClick={() => handleDelete('faqs', item.id)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
+                                        <button onClick={() => handleDelete('faqs', item)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
@@ -486,7 +488,7 @@ export default function AdminPage() {
                                             </div>
                                             <p className="text-sm text-slate-600 mt-2 italic">"{item.quote}"</p>
                                         </div>
-                                        <button onClick={() => handleDelete('testimonials', item.id)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
+                                        <button onClick={() => handleDelete('testimonials', item)} className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition">
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
