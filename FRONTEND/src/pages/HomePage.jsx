@@ -4,7 +4,7 @@ import ScholarshipCard from '../components/ScholarshipCard'
 import TestimonialCarousel from '../components/TestimonialCarousel'
 import { FileEdit, Target, Plane } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/scholarships'
 
 export default function HomePage() {
   const [scholarships, setScholarships] = useState([])

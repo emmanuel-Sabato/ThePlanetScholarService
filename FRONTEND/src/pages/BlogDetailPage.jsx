@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-const API_URL = 'http://localhost:3000/api/blog'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/blog'
 
 export default function BlogDetailPage() {
   const { id } = useParams()

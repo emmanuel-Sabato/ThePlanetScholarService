@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = 'http://localhost:3000/api/testimonials'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/testimonials'
 
 export default function TestimonialCarousel() {
   const [activeIndex, setActiveIndex] = useState(0)

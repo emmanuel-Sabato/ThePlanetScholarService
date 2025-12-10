@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import shamiImage from '../assets/My-Image.jpg'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api'
 
 // Map image filenames to imported images
 const imageMap = {

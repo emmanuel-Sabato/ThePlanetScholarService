@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Target, FileEdit, Plane, Palette, Smartphone } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api/services'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/services'
 
 const ICON_MAP = {
   Target,

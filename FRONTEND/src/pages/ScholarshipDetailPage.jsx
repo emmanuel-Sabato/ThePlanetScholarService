@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ScholarshipCard from '../components/ScholarshipCard'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/scholarships'
 
 export default function ScholarshipDetailPage() {
   const { id } = useParams()

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { blogPosts } from '../data/mockData'
 
-const API_URL = 'http://localhost:3000/api/blog'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/blog'
 
 export default function BlogPage() {
   const [posts, setPosts] = useState([])

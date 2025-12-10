@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Edit2, BookOpen, Users, Briefcase, MessageSquare, HelpCircle, GraduationCap, Star, LogOut, Settings } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api'
 
 const ICON_MAP = {
     Target: 'Target',

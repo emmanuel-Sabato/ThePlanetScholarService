@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_URL = 'http://localhost:3000/api/faqs'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/faqs'
 
 export default function FAQAccordion() {
   const [open, setOpen] = useState(null)

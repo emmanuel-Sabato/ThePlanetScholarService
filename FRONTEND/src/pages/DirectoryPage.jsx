@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import FilterBar from '../components/FilterBar'
 import ScholarshipCard from '../components/ScholarshipCard'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = 'https://backend-tau-lime-64.vercel.app/api/scholarships'
 const PAGE_SIZE = 4
 
 export default function DirectoryPage() {
