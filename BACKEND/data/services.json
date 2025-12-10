@@ -1,0 +1,32 @@
+[
+  {
+    "id": "application-guidance",
+    "title": "Application Guidance",
+    "icon": "Target",
+    "description": "Personalized timelines, document checklists, and strategy to match scholarship criteria."
+  },
+  {
+    "id": "essay-writing",
+    "title": "Essay Writing Help",
+    "icon": "FileEdit",
+    "description": "Story-first coaching, structure, and detailed edits to make your essays memorable."
+  },
+  {
+    "id": "visa-support",
+    "title": "Visa Support",
+    "icon": "Plane",
+    "description": "Interview practice, financial proof guidance, and travel preparation checklists."
+  },
+  {
+    "id": "web-design",
+    "title": "Web Design",
+    "icon": "Palette",
+    "description": "Beautiful, responsive websites that engage your audience and elevate your brand presence."
+  },
+  {
+    "id": "mobile-app",
+    "title": "Mobile App Development",
+    "icon": "Smartphone",
+    "description": "Custom mobile applications for iOS and Android that deliver exceptional user experiences."
+  }
+]
