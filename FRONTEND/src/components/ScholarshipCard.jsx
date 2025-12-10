@@ -11,17 +11,11 @@ export default function ScholarshipCard({ scholarship }) {
         <span className="badge">{scholarship.degree}</span>
       </div>
       <p className="mt-3 text-sm text-slate-600 line-clamp-3">{scholarship.description}</p>
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-700">
+      <div className="mt-4 flex items-center text-sm text-slate-700">
         <span className="flex items-center gap-2">
           <span className="text-slate-500">Deadline:</span>
           <strong>{new Date(scholarship.deadline).toLocaleDateString()}</strong>
         </span>
-        <Link
-          to={`/scholarships/${scholarship.id}`}
-          className="text-sky-700 font-semibold hover:text-sky-800"
-        >
-          View Details →
-        </Link>
       </div>
     </article>
   )

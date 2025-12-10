@@ -14,11 +14,16 @@ export default function Footer() {
             We connect students to trusted scholarships worldwide, providing guidance on applications,
             essays, and visa preparation.
           </p>
-          <div className="mt-4 flex gap-3 text-slate-500">
-            <a className="hover:text-sky-600" href="mailto:support@scholarshipworld.com">support@scholarshipworld.com</a>
-            <span aria-hidden="true">·</span>
-            <a className="hover:text-sky-600" href="https://www.linkedin.com" target="_blank" rel="noreferrer">LinkedIn</a>
-            <a className="hover:text-sky-600" href="https://twitter.com" target="_blank" rel="noreferrer">X</a>
+          <div className="mt-4 flex flex-col gap-2 text-sm text-slate-600">
+            <a className="hover:text-sky-600 flex items-center gap-2" href="https://www.instagram.com/thep2s_apply_ltd/" target="_blank" rel="noreferrer">
+              <span className="font-semibold">IG:</span> @thep2s_apply_ltd
+            </a>
+            <a className="hover:text-sky-600 flex items-center gap-2" href="tel:+250781306944">
+              <span className="font-semibold">Call & Message:</span> 0781306944
+            </a>
+            <a className="hover:text-sky-600 flex items-center gap-2" href="mailto:iradukundagasangwa18@gmail.com">
+              <span className="font-semibold">Email:</span> iradukundagasangwa18@gmail.com
+            </a>
           </div>
         </div>
 

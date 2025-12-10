@@ -103,13 +103,16 @@ export default function ContactPage() {
         <div className="space-y-6">
           <div className="card-surface p-6">
             <h2 className="text-lg font-semibold text-slate-900">Support</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Email us at <a className="text-sky-700 font-semibold" href="mailto:emmanuelsab88@gmail.com">emmanuelsab88@gmail.com</a>
-            </p>
-            <div className="mt-3 flex gap-3 text-slate-600">
-              <a className="hover:text-sky-600" href="https://www.linkedin.com" target="_blank" rel="noreferrer">LinkedIn</a>
-              <a className="hover:text-sky-600" href="https://twitter.com" target="_blank" rel="noreferrer">X</a>
-              <a className="hover:text-sky-600" href="https://www.facebook.com" target="_blank" rel="noreferrer">Facebook</a>
+            <div className="mt-3 flex flex-col gap-2 text-sm text-slate-600">
+              <a className="hover:text-sky-600 flex items-center gap-2" href="https://www.instagram.com/thep2s_apply_ltd/" target="_blank" rel="noreferrer">
+                <span className="font-semibold">IG:</span> @thep2s_apply_ltd
+              </a>
+              <a className="hover:text-sky-600 flex items-center gap-2" href="tel:+250781306944">
+                <span className="font-semibold">Call & Message:</span> 0781306944
+              </a>
+              <a className="hover:text-sky-600 flex items-center gap-2" href="mailto:iradukundagasangwa18@gmail.com">
+                <span className="font-semibold">Email:</span> iradukundagasangwa18@gmail.com
+              </a>
             </div>
           </div>
 
