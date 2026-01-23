@@ -382,16 +382,17 @@ const transporter = nodemailer.createTransport({
  */
 const sendSystemEmail = async (to, subject, htmlContent) => {
     try {
+        const senderAddress = process.env.EMAIL_USER || '9fd744001@smtp-brevo.com';
         const info = await transporter.sendMail({
-            from: `"The Planet Scholar" <${process.env.EMAIL_USER}>`,
+            from: `"The Planet Scholar" <${senderAddress}>`,
             to,
             subject,
             html: htmlContent
         });
-        console.log(`[Email Success] Email sent via SMTP: ${info.messageId}`);
+        console.log(`[Email Success] Email sent via Brevo SMTP: ${info.messageId}`);
         return true;
     } catch (error) {
-        console.error(`[Email Error] SMTP failed for ${to}:`, error);
+        console.error(`[Email Error] Brevo SMTP failed for ${to}:`, error);
         return false;
     }
 };
@@ -1673,8 +1674,14 @@ app.post('/api/auth/send-verification', async (req, res) => {
             </div>
         `;
 
-        await sendSystemEmail(email, 'Your Verification Code - The Planet Scholar', emailHtml);
-        res.json({ message: 'Verification code sent' });
+        const sent = await sendSystemEmail(email, 'Your Verification Code - The Planet Scholar', emailHtml);
+
+        if (sent) {
+            res.json({ message: 'Verification code sent' });
+        } else {
+            console.error('[Registration] Failed to send verification email to:', email);
+            res.status(500).json({ error: 'Failed to send verification email. Please try again later.' });
+        }
 
     } catch (error) {
         console.error('Send verification error:', error);
