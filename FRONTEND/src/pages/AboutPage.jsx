@@ -3,18 +3,21 @@ import { Link } from 'react-router-dom'
 import { Globe, Award, FileText, Users, Target, Heart, Loader2, ArrowRight } from 'lucide-react'
 import shamiImage from '../assets/My-Image.jpg'
 
-const API_URL = 'https://backend-tau-lime-64.vercel.app/api'
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://backend-tau-lime-64.vercel.app/api');
 
 const imageMap = {
   'My-Image.jpg': shamiImage,
 }
 
-  const stats = [
-    { label: 'Countries served', value: '50+', icon: Globe, color: 'from-sky-100 to-blue-100', iconColor: 'text-sky-600' },
-    { label: 'Scholarships tracked', value: '2,500+', icon: Award, color: 'from-emerald-100 to-teal-100', iconColor: 'text-emerald-600' },
-    { label: 'Essays reviewed', value: '1,200+', icon: FileText, color: 'from-cyan-100 to-sky-100', iconColor: 'text-cyan-600' },
-    { label: 'Students helped', value: '10K+', icon: Users, color: 'from-blue-100 to-indigo-100', iconColor: 'text-blue-600' },
-  ]
+const stats = [
+  { label: 'Countries served', value: '50+', icon: Globe, color: 'from-sky-100 to-blue-100', iconColor: 'text-sky-600' },
+  { label: 'Scholarships tracked', value: '2,500+', icon: Award, color: 'from-emerald-100 to-teal-100', iconColor: 'text-emerald-600' },
+  { label: 'Essays reviewed', value: '1,200+', icon: FileText, color: 'from-cyan-100 to-sky-100', iconColor: 'text-cyan-600' },
+  { label: 'Students helped', value: '10K+', icon: Users, color: 'from-blue-100 to-indigo-100', iconColor: 'text-blue-600' },
+]
 
 export default function AboutPage() {
   const [mission, setMission] = useState({ title: '', content: '' })
@@ -158,7 +161,7 @@ export default function AboutPage() {
         )}
       </section>
 
-      {/* CTA Section */} 
+      {/* CTA Section */}
       <section className="section-container py-12 md:py-16">
         <div className="bg-gradient-to-r from-sky-600 to-emerald-500 rounded-2xl p-8 md:p-12 text-center text-white">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Start Your Journey?</h2>

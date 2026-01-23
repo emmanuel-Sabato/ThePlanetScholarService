@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Calendar, User, ArrowLeft, BookOpen, Loader2 } from 'lucide-react'
 
-const API_URL = 'https://backend-tau-lime-64.vercel.app/api/blog'
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://backend-tau-lime-64.vercel.app/api');
 
 export default function BlogDetailPage() {
   const { id } = useParams()
@@ -10,7 +13,7 @@ export default function BlogDetailPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(API_URL)
+    fetch(`${API_URL}/blog`)
       .then(r => r.json())
       .then(data => { setPosts(data); setLoading(false) })
       .catch(err => { console.error(err); setLoading(false) })

@@ -21,7 +21,7 @@ export default function ScholarshipDetailPage() {
 
   async function fetchScholarships() {
     try {
-      const response = await fetch(API_URL)
+      const response = await fetch(`${API_URL}/scholarships`)
       const data = await response.json()
       setScholarships(data)
       setLoading(false)

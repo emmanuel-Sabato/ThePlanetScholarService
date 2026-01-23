@@ -3,6 +3,11 @@ import FAQAccordion from '../components/FAQAccordion'
 import { faqs } from '../data/mockData'
 import { Mail, Phone, Instagram, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://backend-tau-lime-64.vercel.app/api');
+
 export default function ContactPage() {
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,7 +27,7 @@ export default function ContactPage() {
     }
 
     try {
-      const response = await fetch('https://backend-tau-lime-64.vercel.app/api/contact', {
+      const response = await fetch(`${API_URL}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -137,11 +142,10 @@ export default function ContactPage() {
               </button>
               {status && (
                 <div
-                  className={`flex items-start gap-3 p-4 rounded-lg ${
-                    isSuccess
+                  className={`flex items-start gap-3 p-4 rounded-lg ${isSuccess
                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                       : 'bg-red-50 text-red-800 border border-red-200'
-                  }`}
+                    }`}
                 >
                   {isSuccess ? (
                     <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />

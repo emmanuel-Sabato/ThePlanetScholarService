@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Target, FileEdit, Plane, Palette, Smartphone, CheckCircle2, ArrowRight, Loader2, Clock, Users, Award } from 'lucide-react'
 
-const API_URL = 'https://backend-tau-lime-64.vercel.app/api/services'
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://backend-tau-lime-64.vercel.app/api');
 
 const ICON_MAP = {
   Target,
@@ -45,7 +48,7 @@ export default function ServicesPage() {
 
   async function fetchServices() {
     try {
-      const response = await fetch(API_URL)
+      const response = await fetch(`${API_URL}/services`)
       const data = await response.json()
       setServices(data)
       setLoading(false)
@@ -77,8 +80,8 @@ export default function ServicesPage() {
               Everything You Need to Secure Funding
             </h1>
             <p className="text-lg text-slate-600">
-          From the first search to your visa interview, our advisors keep you organized, confident, and on-time.
-        </p>
+              From the first search to your visa interview, our advisors keep you organized, confident, and on-time.
+            </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <a href="#guidance" className="btn-primary inline-flex items-center gap-2">
                 See How It Works
@@ -96,16 +99,16 @@ export default function ServicesPage() {
       <section className="section-container py-12 md:py-16">
         {services.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {services.map((service) => {
-          const IconComponent = ICON_MAP[service.icon] || Target
-          return (
+            {services.map((service) => {
+              const IconComponent = ICON_MAP[service.icon] || Target
+              return (
                 <div
                   key={service.id}
                   className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
                   <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-sky-100 to-emerald-100 flex items-center justify-center mb-4">
                     <IconComponent className="h-7 w-7 text-sky-600" strokeWidth={2} />
-              </div>
+                  </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">{service.title}</h3>
                   <p className="text-sm text-slate-600 mb-4 leading-relaxed">{service.description}</p>
                   <Link
@@ -115,15 +118,15 @@ export default function ServicesPage() {
                     Talk to an expert
                     <ArrowRight className="w-4 h-4" />
                   </Link>
-            </div>
-          )
-        })}
-      </div>
+                </div>
+              )
+            })}
+          </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
             <Award className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-600">Services information coming soon.</p>
-        </div>
+          </div>
         )}
       </section>
 
@@ -141,8 +144,8 @@ export default function ServicesPage() {
               </h2>
               <p className="text-slate-600 max-w-2xl mx-auto">
                 We guide you through every step of your scholarship journey with expert advice and personalized support.
-            </p>
-          </div>
+              </p>
+            </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {processSteps.map((step, index) => {
