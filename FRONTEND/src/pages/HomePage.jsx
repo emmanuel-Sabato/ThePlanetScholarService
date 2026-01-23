@@ -5,7 +5,10 @@ import TestimonialCarousel from '../components/TestimonialCarousel'
 import { FileEdit, Target, Plane, Search, ArrowRight, CheckCircle2, Users, Globe, Award, TrendingUp, Loader2 } from 'lucide-react'
 import logo from '../assets/Thep2s.png'
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://backend-tau-lime-64.vercel.app/api');
 
 export default function HomePage() {
   const navigate = useNavigate()
