@@ -422,10 +422,15 @@ export default function ApplicationFormPage() {
             if (!applicationId) return;
 
             try {
+                const API_URL = import.meta.env.VITE_API_URL ||
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                        ? 'http://localhost:3000/api'
+                        : 'https://backend-tau-lime-64.vercel.app/api');
+
                 // Fetch Applications and Scholarships in parallel
                 const [appRes, schRes] = await Promise.all([
-                    fetch(`${import.meta.env.VITE_API_URL}/applications`),
-                    fetch(`${import.meta.env.VITE_API_URL}/scholarships`)
+                    fetch(`${API_URL}/applications`),
+                    fetch(`${API_URL}/scholarships`)
                 ]);
 
                 const apps = await appRes.json();

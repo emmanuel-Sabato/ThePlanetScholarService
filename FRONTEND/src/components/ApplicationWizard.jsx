@@ -40,9 +40,14 @@ export default function ApplicationWizard({ scholarshipName, isOpen, onClose, ap
     const handleSubmit = async () => {
         setIsSubmitting(true)
         try {
+            const API_URL = import.meta.env.VITE_API_URL ||
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:3000/api'
+                    : 'https://backend-tau-lime-64.vercel.app/api');
+
             const url = applicationId
-                ? `${import.meta.env.VITE_API_URL}/applications/${applicationId}`
-                : `${import.meta.env.VITE_API_URL}/applications`;
+                ? `${API_URL}/applications/${applicationId}`
+                : `${API_URL}/applications`;
 
             const method = applicationId ? 'PUT' : 'POST';
 
