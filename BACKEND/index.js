@@ -396,6 +396,7 @@ const sendSystemEmail = async (to, subject, htmlContent) => {
 };
 
 // Middleware
+app.set('trust proxy', 1);
 app.use(cors({
     origin: [
         'http://localhost:5173',
