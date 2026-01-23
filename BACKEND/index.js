@@ -393,8 +393,8 @@ const sendSystemEmail = async (to, subject, htmlContent) => {
         console.log(`[Email Success] Email sent via Brevo SMTP: ${info.messageId}`);
         return true;
     } catch (error) {
-        console.error(`[Email Error] Brevo SMTP failed for ${to}:`, error);
-        return false;
+        console.error(`[Email Error] Brevo SMTP failed for ${to}:`, error.message);
+        throw error; // Throw so the caller can catch and report specific details
     }
 };
 
@@ -1675,14 +1675,8 @@ app.post('/api/auth/send-verification', async (req, res) => {
             </div>
         `;
 
-        const sent = await sendSystemEmail(email, 'Your Verification Code - The Planet Scholar', emailHtml);
-
-        if (sent) {
-            res.json({ message: 'Verification code sent' });
-        } else {
-            console.error('[Registration] Failed to send verification email to:', email);
-            res.status(500).json({ error: 'Failed to send verification email. Please try again later.' });
-        }
+        await sendSystemEmail(email, 'Your Verification Code - The Planet Scholar', emailHtml);
+        res.json({ message: 'Verification code sent' });
 
     } catch (error) {
         console.error('Send verification error:', error);
