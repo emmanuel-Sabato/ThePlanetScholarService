@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, X, Save, ChevronRight, ChevronDown } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AdminEnrollmentCategories() {
     const [categories, setCategories] = useState([])

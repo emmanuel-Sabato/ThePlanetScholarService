@@ -41,8 +41,8 @@ export default function ApplicationWizard({ scholarshipName, isOpen, onClose, ap
         setIsSubmitting(true)
         try {
             const url = applicationId
-                ? `http://localhost:3000/api/applications/${applicationId}`
-                : 'http://localhost:3000/api/applications';
+                ? `${import.meta.env.VITE_API_URL}/applications/${applicationId}`
+                : `${import.meta.env.VITE_API_URL}/applications`;
 
             const method = applicationId ? 'PUT' : 'POST';
 

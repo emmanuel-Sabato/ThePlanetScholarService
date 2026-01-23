@@ -5,7 +5,7 @@ import TestimonialCarousel from '../components/TestimonialCarousel'
 import { FileEdit, Target, Plane, Search, ArrowRight, CheckCircle2, Users, Globe, Award, TrendingUp, Loader2 } from 'lucide-react'
 import logo from '../assets/Thep2s.png'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function HomePage() {
   const navigate = useNavigate()

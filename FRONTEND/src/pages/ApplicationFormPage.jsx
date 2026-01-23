@@ -424,8 +424,8 @@ export default function ApplicationFormPage() {
             try {
                 // Fetch Applications and Scholarships in parallel
                 const [appRes, schRes] = await Promise.all([
-                    fetch(`http://localhost:3000/api/applications`),
-                    fetch(`http://localhost:3000/api/scholarships`)
+                    fetch(`${import.meta.env.VITE_API_URL}/applications`),
+                    fetch(`${import.meta.env.VITE_API_URL}/scholarships`)
                 ]);
 
                 const apps = await appRes.json();
@@ -594,7 +594,7 @@ export default function ApplicationFormPage() {
         e.preventDefault()
         setSaving(true)
         try {
-            const response = await fetch(`http://localhost:3000/api/applications/${applicationId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -621,7 +621,7 @@ export default function ApplicationFormPage() {
     const handleSaveDraft = async () => {
         setSaving(true)
         try {
-            await fetch(`http://localhost:3000/api/applications/${applicationId}`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -655,7 +655,7 @@ export default function ApplicationFormPage() {
             }
 
             // 2. Submit Update
-            const response = await fetch(`http://localhost:3000/api/applications/${applicationId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -958,7 +958,7 @@ export default function ApplicationFormPage() {
                 const formData = new FormData()
                 formData.append('file', file)
 
-                const response = await fetch('http://localhost:3000/api/upload', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
                     method: 'POST',
                     body: formData,
                 })
@@ -1099,7 +1099,7 @@ export default function ApplicationFormPage() {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://localhost:3000/api/upload', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
             })

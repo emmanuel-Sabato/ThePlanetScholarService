@@ -3,7 +3,7 @@ import { Search, ChevronDown, Loader2, BookmarkCheck, ArrowUp } from 'lucide-rea
 import FilterBar from '../components/FilterBar'
 import ScholarshipCard from '../components/ScholarshipCard'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = import.meta.env.VITE_API_URL;
 const PAGE_SIZE = 10
 
 const SORT_OPTIONS = [
@@ -209,8 +209,8 @@ export default function DirectoryPage() {
                   setPage(1)
                 }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showBookmarksOnly
-                    ? 'bg-sky-600 text-white shadow-md'
-                    : 'bg-white border border-slate-200 text-slate-700 hover:border-sky-300 hover:text-sky-700'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:border-sky-300 hover:text-sky-700'
                   }`}
               >
                 <BookmarkCheck className={`w-4 h-4 ${showBookmarksOnly ? 'fill-white' : ''}`} />
@@ -240,8 +240,8 @@ export default function DirectoryPage() {
                         key={option.value}
                         onClick={() => handleSortChange(option.value)}
                         className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${sortBy === option.value
-                            ? 'bg-sky-50 text-sky-700 font-medium'
-                            : 'text-slate-700'
+                          ? 'bg-sky-50 text-sky-700 font-medium'
+                          : 'text-slate-700'
                           } ${option.value === SORT_OPTIONS[0].value ? 'rounded-t-lg' : ''} ${option.value === SORT_OPTIONS[SORT_OPTIONS.length - 1].value ? 'rounded-b-lg' : ''
                           }`}
                       >
@@ -353,8 +353,8 @@ export default function DirectoryPage() {
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${page === pageNum
-                        ? 'bg-sky-600 text-white'
-                        : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
                       }`}
                   >
                     {pageNum}

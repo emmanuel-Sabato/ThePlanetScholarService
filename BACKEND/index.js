@@ -397,7 +397,12 @@ const sendSystemEmail = async (to, subject, htmlContent) => {
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Add your frontend URL
+    origin: [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://theplanetscholar.vercel.app', // Update this with your actual frontend URL if different
+        'https://backend-tau-lime-64.vercel.app'
+    ],
     credentials: true
 }));
 app.use(express.json());

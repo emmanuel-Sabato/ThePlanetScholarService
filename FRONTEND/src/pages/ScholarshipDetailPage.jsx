@@ -4,7 +4,7 @@ import ScholarshipCard from '../components/ScholarshipCard'
 import ApplicationWizard from '../components/ApplicationWizard'
 import { Calendar, MapPin, GraduationCap, CheckCircle2, ArrowLeft, Loader2, FileText, Award } from 'lucide-react'
 
-const API_URL = 'http://localhost:3000/api/scholarships'
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ScholarshipDetailPage() {
   const { id } = useParams()
@@ -52,7 +52,7 @@ export default function ScholarshipDetailPage() {
             <Link to="/scholarships" className="btn-primary inline-flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Directory
-          </Link>
+            </Link>
           </div>
         </div>
       </div>
@@ -133,25 +133,25 @@ export default function ScholarshipDetailPage() {
                     <Calendar className="w-4 h-4" />
                     <span className="text-xs font-medium">Deadline</span>
                   </div>
-            <p className="text-lg font-semibold text-slate-900">
+                  <p className="text-lg font-semibold text-slate-900">
                     {scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not specified'}
-            </p>
-          </div>
+                  </p>
+                </div>
                 <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                   <div className="flex items-center gap-2 text-slate-500 mb-2">
                     <MapPin className="w-4 h-4" />
                     <span className="text-xs font-medium">Location</span>
                   </div>
-            <p className="text-lg font-semibold text-slate-900">{scholarship.country}</p>
-          </div>
+                  <p className="text-lg font-semibold text-slate-900">{scholarship.country}</p>
+                </div>
                 <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                   <div className="flex items-center gap-2 text-slate-500 mb-2">
                     <FileText className="w-4 h-4" />
                     <span className="text-xs font-medium">Field</span>
                   </div>
-            <p className="text-lg font-semibold text-slate-900">{scholarship.field}</p>
-          </div>
-        </div>
+                  <p className="text-lg font-semibold text-slate-900">{scholarship.field}</p>
+                </div>
+              </div>
 
               {/* Eligibility Section */}
               {scholarship.eligibility && (
@@ -163,7 +163,7 @@ export default function ScholarshipDetailPage() {
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <p className="text-slate-700 leading-relaxed">{scholarship.eligibility}</p>
                   </div>
-        </section>
+                </section>
               )}
 
               {/* Benefits Section */}
@@ -176,7 +176,7 @@ export default function ScholarshipDetailPage() {
                   <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
                     <p className="text-slate-700 leading-relaxed">{scholarship.benefits}</p>
                   </div>
-        </section>
+                </section>
               )}
 
               {/* Apply Button */}
@@ -185,22 +185,22 @@ export default function ScholarshipDetailPage() {
                   This scholarship program has ended and is no longer accepting applications.
                 </div>
               ) : (
-        <button
-          onClick={() => setIsWizardOpen(true)}
+                <button
+                  onClick={() => setIsWizardOpen(true)}
                   className="btn-primary w-full md:w-auto px-8 py-3 text-base inline-flex items-center justify-center gap-2"
-        >
-          Apply Now
+                >
+                  Apply Now
                   <ArrowLeft className="w-4 h-4 rotate-180" />
-        </button>
+                </button>
               )}
 
-        <ApplicationWizard
-          scholarshipName={scholarship.name || scholarship.title}
-          isOpen={isWizardOpen}
-          onClose={() => setIsWizardOpen(false)}
-        />
+              <ApplicationWizard
+                scholarshipName={scholarship.name || scholarship.title}
+                isOpen={isWizardOpen}
+                onClose={() => setIsWizardOpen(false)}
+              />
             </div>
-      </article>
+          </article>
 
           {/* Sidebar */}
           <aside className="space-y-6">
@@ -214,21 +214,21 @@ export default function ScholarshipDetailPage() {
                     <span className="text-sm text-slate-700">{item}</span>
                   </li>
                 ))}
-          </ul>
+              </ul>
               <Link to="/services" className="btn-secondary w-full inline-flex items-center justify-center gap-2">
                 Get Expert Guidance
                 <ArrowLeft className="w-4 h-4 rotate-180" />
               </Link>
-        </div>
+            </div>
 
             {/* Related Scholarships */}
             {related.length > 0 && (
               <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Related Scholarships</h3>
                 <div className="space-y-4">
-            {related.slice(0, 3).map((item) => (
+                  {related.slice(0, 3).map((item) => (
                     <ScholarshipCard key={item._id || item.id} scholarship={item} />
-            ))}
+                  ))}
                 </div>
               </div>
             )}
