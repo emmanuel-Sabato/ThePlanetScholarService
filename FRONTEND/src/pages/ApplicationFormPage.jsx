@@ -5,6 +5,11 @@ import { useToast } from '../context/ToastContext'
 import DashboardNavbar from '../components/DashboardNavbar'
 import { COUNTRIES, NATIONALITIES, LANGUAGES, RELATIONSHIPS, OCCUPATIONS, INDUSTRY_TYPES } from '../utils/constants'
 
+const API_URL = import.meta.env.VITE_API_URL ||
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/api'
+        : 'https://backend-tau-lime-64.vercel.app/api');
+
 export default function ApplicationFormPage() {
     const { id: applicationId } = useParams()
     const navigate = useNavigate()
@@ -422,11 +427,6 @@ export default function ApplicationFormPage() {
             if (!applicationId) return;
 
             try {
-                const API_URL = import.meta.env.VITE_API_URL ||
-                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                        ? 'http://localhost:3000/api'
-                        : 'https://backend-tau-lime-64.vercel.app/api');
-
                 // Fetch Applications and Scholarships in parallel
                 const [appRes, schRes] = await Promise.all([
                     fetch(`${API_URL}/applications`),
@@ -626,7 +626,7 @@ export default function ApplicationFormPage() {
     const handleSaveDraft = async () => {
         setSaving(true)
         try {
-            await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
+            await fetch(`${API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -963,7 +963,7 @@ export default function ApplicationFormPage() {
                 const formData = new FormData()
                 formData.append('file', file)
 
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+                const response = await fetch(`${API_URL}/upload`, {
                     method: 'POST',
                     body: formData,
                 })

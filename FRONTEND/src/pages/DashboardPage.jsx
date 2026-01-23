@@ -212,7 +212,7 @@ export default function DashboardPage() {
             const fetchAndCreate = async () => {
                 try {
                     console.log(`[Dashboard] Auto-creating application for scholarship ${scholarshipId}`);
-                    const res = await fetch(`${import.meta.env.VITE_API_URL}/scholarships/${scholarshipId}`);
+                    const res = await fetch(`${API_URL}/scholarships/${scholarshipId}`);
                     if (res.ok) {
                         const scholarship = await res.json();
                         // handleAddApplication handles the creation AND the redirect
@@ -235,7 +235,7 @@ export default function DashboardPage() {
     // Fetch categories when modal opens (Step 2)
     useEffect(() => {
         if (showStartAppModal && startAppStep === 2) {
-            fetch(`${import.meta.env.VITE_API_URL}/enrollment-categories`)
+            fetch(`${API_URL}/enrollment-categories`)
                 .then(r => r.json())
                 .then(data => setCategories(data))
                 .catch(err => console.error('Failed to fetch categories', err))
@@ -249,7 +249,7 @@ export default function DashboardPage() {
             setAvailableScholarships([]) // Reset previous
 
             // Cache busting with t parameter to ensure fresh data from admin updates
-            fetch(`${import.meta.env.VITE_API_URL}/scholarships?t=${Date.now()}`)
+            fetch(`${API_URL}/scholarships?t=${Date.now()}`)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
                     return res.json()
@@ -293,7 +293,7 @@ export default function DashboardPage() {
         if (creatingApp) return;
         setCreatingApp(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/applications`, {
+            const response = await fetch(`${API_URL}/applications`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
