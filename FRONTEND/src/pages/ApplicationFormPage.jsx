@@ -599,7 +599,7 @@ export default function ApplicationFormPage() {
         e.preventDefault()
         setSaving(true)
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
+            const response = await fetch(`${API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -660,7 +660,7 @@ export default function ApplicationFormPage() {
             }
 
             // 2. Submit Update
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/applications/${applicationId}`, {
+            const response = await fetch(`${API_URL}/applications/${applicationId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -1104,7 +1104,7 @@ export default function ApplicationFormPage() {
         formData.append('file', file)
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+            const response = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
             })
