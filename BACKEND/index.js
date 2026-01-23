@@ -368,6 +368,7 @@ async function seedEnrollmentCategories() {
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
+    secure: false, // port 587 uses STARTTLS
     auth: {
         user: '9fd744001@smtp-brevo.com', // Your Brevo SMTP Login
         pass: process.env.API_KEY         // Your Brevo API Key
@@ -1685,7 +1686,11 @@ app.post('/api/auth/send-verification', async (req, res) => {
 
     } catch (error) {
         console.error('Send verification error:', error);
-        res.status(500).json({ error: 'Failed to send verification code' });
+        res.status(500).json({
+            error: 'Failed to send verification code',
+            details: error.message,
+            technical: 'Check Brevo API key and Sender verification'
+        });
     }
 });
 
