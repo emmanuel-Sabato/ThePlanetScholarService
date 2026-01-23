@@ -400,7 +400,7 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
-        'https://theplanetscholar.vercel.app', // Update this with your actual frontend URL if different
+        'https://theplanetscholarservice.vercel.app',
         'https://backend-tau-lime-64.vercel.app'
     ],
     credentials: true
