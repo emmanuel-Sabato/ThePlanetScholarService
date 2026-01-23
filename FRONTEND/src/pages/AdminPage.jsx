@@ -3258,16 +3258,18 @@ export default function AdminPage() {
                                 }
 
                                 const lower = (previewDocUrl && typeof previewDocUrl === 'string') ? previewDocUrl.toLowerCase() : ''
-                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/.test(lower)
-                                const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/.test(lower)
+                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) || lower.includes('/image/upload/')
+                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(lower) || lower.includes('/video/upload/')
+                                const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower)
 
                                 if (isImage) {
                                     return (
-                                        <div className="w-full h-full flex items-center justify-center bg-slate-900/5">
+                                        <div className="w-full h-full flex items-center justify-center bg-slate-900/5 p-4 md:p-12">
                                             <img
                                                 src={previewDocUrl}
                                                 alt="Document"
-                                                className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+                                                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border-4 border-white"
+                                                loading="lazy"
                                             />
                                         </div>
                                     )
@@ -3279,17 +3281,33 @@ export default function AdminPage() {
                                             <video
                                                 src={previewDocUrl}
                                                 controls
-                                                className="max-w-full max-h-full rounded-xl shadow-2xl"
+                                                autoPlay
+                                                className="max-w-full max-h-full shadow-2xl"
                                             />
                                         </div>
                                     )
                                 }
 
-                                // Fallback: use iframe for PDFs and unknown types
+                                if (isOfficeDoc) {
+                                    return (
+                                        <div className="w-full h-full relative bg-white">
+                                            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
+                                                Loading Office Document...
+                                            </div>
+                                            <iframe
+                                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewDocUrl)}&embedded=true`}
+                                                className="w-full h-full border-none relative z-10"
+                                                title="Office Document Preview"
+                                            />
+                                        </div>
+                                    )
+                                }
+
+                                // Default: use iframe for PDFs and unknown types
                                 return (
                                     <iframe
                                         src={previewDocUrl}
-                                        className="w-full h-full border-none bg-white"
+                                        className="w-full h-full border-none bg-white font-sans"
                                         title="Document Preview"
                                     />
                                 )

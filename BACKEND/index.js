@@ -364,12 +364,13 @@ async function seedEnrollmentCategories() {
     }
 }
 
-// Email configuration (Gmail SMTP)
+// Email configuration (Brevo SMTP - formerly Sendinblue)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp-relay.brevo.com',
+    port: 587,
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: '9fd744001@smtp-brevo.com', // Your Brevo SMTP Login
+        pass: process.env.API_KEY         // Your Brevo API Key
     }
 });
 
