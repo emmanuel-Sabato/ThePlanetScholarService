@@ -968,7 +968,10 @@ export default function ApplicationFormPage() {
                     body: formData,
                 })
 
-                if (!response.ok) throw new Error('Upload failed')
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.details || errorData.error || 'Upload failed');
+                }
 
                 const data = await response.json()
                 if (data.url && typeof data.url === 'string') {
@@ -1109,7 +1112,10 @@ export default function ApplicationFormPage() {
                 body: formData,
             })
 
-            if (!response.ok) throw new Error('Upload failed')
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.details || errorData.error || 'Upload failed');
+            }
 
             const data = await response.json()
             if (data.url && typeof data.url === 'string') {
