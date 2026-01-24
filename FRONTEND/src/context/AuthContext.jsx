@@ -99,7 +99,8 @@ export const AuthProvider = ({ children }) => {
         });
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to send code');
+            const message = error.details ? `${error.error}: ${error.details}` : (error.error || 'Failed to send code');
+            throw new Error(message);
         }
         return await response.json();
     };
