@@ -6252,8 +6252,9 @@ export default function ApplicationFormPage() {
                                 }
 
                                 const lower = (previewDocUrl && typeof previewDocUrl === 'string') ? previewDocUrl.toLowerCase() : ''
-                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) || lower.includes('/image/upload/')
-                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(lower) || lower.includes('/video/upload/')
+                                const isBlob = lower.startsWith('blob:')
+                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) || lower.includes('/image/upload/') || (isBlob && previewDocUrl.includes('image'))
+                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(lower) || lower.includes('/video/upload/') || (isBlob && previewDocUrl.includes('video'))
                                 const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower)
 
                                 if (isImage) {
@@ -6283,6 +6284,27 @@ export default function ApplicationFormPage() {
                                 }
 
                                 if (isOfficeDoc) {
+                                    if (isBlob) {
+                                        return (
+                                            <div className="w-full h-full flex flex-col items-center justify-center bg-white p-8 text-center">
+                                                <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center text-amber-500 mb-6 font-bold">
+                                                    !
+                                                </div>
+                                                <h4 className="text-xl font-bold text-slate-800 mb-2">Preview Pending Upload</h4>
+                                                <p className="text-slate-500 max-w-sm mb-6">
+                                                    This Office document is stored locally on your device. Previews are available once the application is saved and the file is uploaded.
+                                                </p>
+                                                <a
+                                                    href={previewDocUrl}
+                                                    download
+                                                    className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all active:scale-95"
+                                                >
+                                                    Download to View
+                                                </a>
+                                            </div>
+                                        )
+                                    }
+
                                     return (
                                         <div className="w-full h-full relative bg-white">
                                             <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
@@ -6308,10 +6330,22 @@ export default function ApplicationFormPage() {
                             })()}
                         </div>
 
-                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-center">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+                        {/* Footer (Enhanced with fallback) */}
+                        <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] order-2 md:order-1">
                                 Secure Document Management &bull; ThePlanetScholar
                             </p>
+                            <div className="flex items-center gap-3 order-1 md:order-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:block">Cannot see the file?</span>
+                                <a
+                                    href={previewDocUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 font-bold text-xs hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm flex items-center gap-2 group"
+                                >
+                                    Open Original File
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
