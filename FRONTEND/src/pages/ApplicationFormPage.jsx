@@ -945,9 +945,9 @@ export default function ApplicationFormPage() {
     const handleVideoUpload = async (e) => {
         const file = e.target.files[0]
         if (file) {
-            // Video size limit: 50MB
-            if (file.size > 50 * 1024 * 1024) {
-                showToast('Video size exceeds 50MB limit', 'error')
+            // Vercel Serverless Function limit is 4.5MB
+            if (file.size > 4 * 1024 * 1024) {
+                showToast('Video exceeds 4MB server limit. Please compress or use a shorter video.', 'error')
                 return
             }
             if (!file.type.startsWith('video/')) {
@@ -1120,7 +1120,8 @@ export default function ApplicationFormPage() {
             }
         } catch (error) {
             console.error('File upload error:', error)
-            showToast(`Failed to upload ${key}`, 'error')
+            const errorMsg = error.message.includes('Unexpected token') ? 'File too large for server (max 4.5MB)' : error.message;
+            showToast(`Failed to upload ${key}: ${errorMsg}`, 'error')
             return null
         } finally {
             setUploadingStatus(prev => ({ ...prev, [key]: false }))
@@ -1131,8 +1132,9 @@ export default function ApplicationFormPage() {
     const handleFileChange = async (e, documentKey) => {
         const file = e.target.files[0]
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('File size exceeds 5MB limit', 'error')
+            // Vercel Limit is 4.5MB
+            if (file.size > 4 * 1024 * 1024) {
+                showToast('File size exceeds 4MB limit for this server', 'error')
                 return
             }
 

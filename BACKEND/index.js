@@ -522,7 +522,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         });
     } catch (error) {
         console.error('Upload error:', error);
-        res.status(500).json({ error: 'Failed to upload file', details: error.message });
+        res.status(500).json({
+            error: 'Failed to upload file',
+            details: error.message,
+            cloudinaryError: error
+        });
     }
 });
 
@@ -561,7 +565,11 @@ app.post('/api/scholarships', upload.single('image'), async (req, res) => {
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
         console.error('Error creating scholarship:', error);
-        res.status(500).json({ error: 'Failed to create scholarship', details: error.message });
+        res.status(500).json({
+            error: 'Failed to create scholarship',
+            details: error.message,
+            cloudinaryError: error
+        });
     }
 });
 
@@ -614,7 +622,11 @@ app.put('/api/scholarships/:id', upload.single('image'), async (req, res) => {
         res.json({ message: 'Scholarship updated successfully', ...updatedItem });
     } catch (error) {
         console.error('Error updating scholarship:', error);
-        res.status(500).json({ error: 'Failed to update scholarship' });
+        res.status(500).json({
+            error: 'Failed to update scholarship',
+            details: error.message,
+            cloudinaryError: error
+        });
     }
 });
 
