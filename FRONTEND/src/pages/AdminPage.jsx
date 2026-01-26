@@ -329,11 +329,16 @@ export default function AdminPage() {
                 const data = await response.json()
                 // Only update if we are still looking at the same user
                 setMessages(prev => {
-                    // If we have messages already and this is a silent poll, 
-                    // we could merge or just replace if order is guaranteed.
-                    // For now, replacing but ensuring we don't clear if data is same length? 
-                    // Actually, replacing is fine if it doesn't flicker.
-                    return Array.isArray(data) ? data : []
+                    const fetchedMessages = Array.isArray(data) ? data : []
+                    // Keep any optimistic messages that haven't been confirmed/replaced yet
+                    const optimistic = prev.filter(m => m.isOptimistic)
+
+                    // Filter out any optimistic messages that are already in the fetched data
+                    const uniqueOptimistic = optimistic.filter(opt =>
+                        !fetchedMessages.some(real => real.content === opt.content && real.senderId === opt.senderId)
+                    )
+
+                    return [...fetchedMessages, ...uniqueOptimistic]
                 })
             }
         } catch (error) {

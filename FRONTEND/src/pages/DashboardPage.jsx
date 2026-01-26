@@ -502,7 +502,19 @@ export default function DashboardPage() {
             const res = await fetch(`${API_URL}/messages/${adminId}`, { credentials: 'include' })
             if (res.ok) {
                 const data = await res.json()
-                setMessages(Array.isArray(data) ? data : [])
+                const fetchedMessages = Array.isArray(data) ? data : []
+
+                setMessages(prev => {
+                    // Keep any optimistic messages that haven't been confirmed/replaced yet
+                    const optimistic = prev.filter(m => m.isOptimistic)
+
+                    // Filter out any optimistic messages that are already in the fetched data
+                    const uniqueOptimistic = optimistic.filter(opt =>
+                        !fetchedMessages.some(real => real.content === opt.content && real.senderId === opt.senderId)
+                    )
+
+                    return [...fetchedMessages, ...uniqueOptimistic]
+                })
             }
         } catch (err) {
             console.error('Failed to fetch messages', err)
