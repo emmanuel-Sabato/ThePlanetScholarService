@@ -702,21 +702,32 @@ export default function AdminPage() {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
-    async function handleDelete(endpoint, item) {
-        const confirmed = window.confirm('Are you sure you want to delete this item?')
-        console.log('Delete item confirmed:', confirmed, 'Endpoint:', endpoint, 'Item:', item)
+    async function handleDelete(endpoint, item, force = false) {
+        const baseMsg = force
+            ? '🚨 DANGER: Students have ALREADY APPLIED to this scholarship. Deleting it will permanently orphan their application records. THIS CANNOT BE UNDONE. Are you absolutely sure?'
+            : 'Are you sure you want to delete this item?'
+
+        const confirmed = window.confirm(baseMsg)
         if (!confirmed) return
+
         try {
-            // Use _id if it exists (new items), otherwise use id (migrated items)
             const deleteId = item._id || item.id
-            console.log('Deleting from:', `${API_URL}/${endpoint}/${deleteId}`)
-            const response = await fetch(`${API_URL}/${endpoint}/${deleteId}`, {
+            const url = `${API_URL}/${endpoint}/${deleteId}${force ? '?force=true' : ''}`
+
+            const response = await fetch(url, {
                 method: 'DELETE',
                 credentials: 'include'
             })
-            console.log('Delete response status:', response.status)
+
+            if (response.status === 409) {
+                const data = await response.json()
+                if (window.confirm(`${data.message}\n\nDo you want to FORCE DELETE it anyway? This will break application links for those students.`)) {
+                    await handleDelete(endpoint, item, true)
+                }
+                return
+            }
+
             if (response.ok) {
-                // Optimized: Only refresh the specific data instead of all 13 endpoints
                 const refreshMap = {
                     'scholarships': () => fetch(`${API_URL}/scholarships`, { credentials: 'include' }).then(r => r.json()).then(d => setScholarships(Array.isArray(d) ? d : [])),
                     'services': () => fetch(`${API_URL}/services`, { credentials: 'include' }).then(r => r.json()).then(d => setServices(Array.isArray(d) ? d : [])),

@@ -28,12 +28,25 @@ async function connectDB() {
         await client.connect();
         db = client.db('scholarsite');
         console.log('✅ Connected to MongoDB');
-        await seedUsers();
-        await seedEnrollmentCategories();
-        await seedScholarships();
-        await seedServices();
-        await seedTeam();
-        await seedBlog();
+
+        // System initialization guard
+        const settings = db.collection('system_settings');
+        const initFlag = await settings.findOne({ key: 'is_initialized' });
+
+        if (!initFlag) {
+            console.log('🚀 System not initialized. Running first-time setup...');
+            await seedUsers();
+            await seedEnrollmentCategories();
+            await seedScholarships();
+            await seedServices();
+            await seedTeam();
+            await seedBlog();
+
+            await settings.insertOne({ key: 'is_initialized', value: true, timestamp: new Date() });
+            console.log('✅ System initialization complete.');
+        } else {
+            console.log('🛡️ System already initialized. Skipping auto-seeding.');
+        }
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
         process.exit(1);
@@ -65,13 +78,9 @@ async function seedScholarships() {
     const scholarshipsCollection = db.collection('scholarships');
     const count = await scholarshipsCollection.countDocuments();
 
-    // If we have fewer than 30 scholarships, assume it's a partial seed or empty, so we re-seed fully.
-    if (count < 30) {
-        console.log('🌱 Seeding/Re-seeding Scholarships...');
-        if (count > 0) {
-            await scholarshipsCollection.deleteMany({});
-            console.log('🧹 Cleared partial scholarship data to ensure complete seed.');
-        }
+    // Only seed if empty. The global guard in connectDB handles "first-time" logic.
+    if (count === 0) {
+        console.log('🌱 Seeding initial Scholarships...');
         const scholarships = [];
 
         // Helper to create 4 universities per sub-category
@@ -295,16 +304,6 @@ async function seedScholarships() {
         if (scholarships.length > 0) {
             await scholarshipsCollection.insertMany(scholarships);
             console.log(`🌱 Seeded ${scholarships.length} Scholarships`);
-        }
-    } else {
-        // Migration fix: Update all existing scholarships with old '2025-12-31' deadline to '2030-12-31'
-        // This ensures users seeing "Closed" will now see "Open"
-        const updateResult = await scholarshipsCollection.updateMany(
-            { deadline: "2025-12-31" },
-            { $set: { deadline: "2030-12-31" } }
-        );
-        if (updateResult.modifiedCount > 0) {
-            console.log(`🔄 Migrated ${updateResult.modifiedCount} scholarships from 2025 to 2030 deadline.`);
         }
     }
 }
@@ -751,7 +750,21 @@ app.put('/api/scholarships/:id', upload.single('image'), async (req, res) => {
 app.delete('/api/scholarships/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(`[DELETE] Received request to delete scholarship: ${id}`);
+        const force = req.query.force === 'true';
+
+        console.log(`[DELETE] Received request to delete scholarship: ${id} (force: ${force})`);
+
+        // Check for active applications
+        const applicationCount = await db.collection('applications').countDocuments({ scholarshipId: id });
+
+        if (applicationCount > 0 && !force) {
+            console.warn(`[DELETE] Blocked: Scholarship ${id} has ${applicationCount} active applications.`);
+            return res.status(409).json({
+                error: 'Active applications detected',
+                count: applicationCount,
+                message: `This scholarship has ${applicationCount} active student application(s). Deleting it will orphan these records.`
+            });
+        }
 
         // Try to delete by custom id first, then by MongoDB _id
         let result = await db.collection('scholarships').deleteOne({ id: id });
@@ -769,13 +782,13 @@ app.delete('/api/scholarships/:id', async (req, res) => {
 
         if (result.deletedCount > 0) {
             console.log(`[DELETE] Successfully deleted scholarship: ${id}`);
-            res.json({ message: 'Deleted successfully' });
+            res.json({ message: 'Scholarship deleted successfully permanently' });
         } else {
             console.warn(`[DELETE] Scholarship not found for deletion: ${id}`);
-            res.status(404).json({ error: 'Not found' });
+            res.status(404).json({ error: 'Scholarship not found' });
         }
     } catch (error) {
-        console.error('[DELETE] Error deleting scholarship:', error);
+        console.error('Delete scholarship error:', error);
         res.status(500).json({ error: 'Failed to delete scholarship' });
     }
 });
