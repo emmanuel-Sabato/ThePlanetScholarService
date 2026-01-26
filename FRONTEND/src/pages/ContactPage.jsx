@@ -6,7 +6,7 @@ import { Mail, Phone, Instagram, Send, Loader2, CheckCircle2, AlertCircle } from
 const API_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000/api'
-    : 'https://backend-tau-lime-64.vercel.app/api');
+    : '/api');
 
 export default function ContactPage() {
   const [status, setStatus] = useState('')
@@ -143,8 +143,8 @@ export default function ContactPage() {
               {status && (
                 <div
                   className={`flex items-start gap-3 p-4 rounded-lg ${isSuccess
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : 'bg-red-50 text-red-800 border border-red-200'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
                     }`}
                 >
                   {isSuccess ? (

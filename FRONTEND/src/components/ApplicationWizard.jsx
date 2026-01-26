@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 const API_URL = import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3000/api'
-        : 'https://backend-tau-lime-64.vercel.app/api');
+        : '/api');
 
 const steps = [
     { id: 1, title: "Instructions" },
@@ -46,7 +46,7 @@ export default function ApplicationWizard({ scholarshipName, isOpen, onClose, ap
         setIsSubmitting(true)
         try {
             const url = applicationId
-                ? `${API_URL}/applications/${applicationId}`
+                ? `${API_URL} /applications/${applicationId} `
                 : `${API_URL}/applications`;
 
             const method = applicationId ? 'PUT' : 'POST';

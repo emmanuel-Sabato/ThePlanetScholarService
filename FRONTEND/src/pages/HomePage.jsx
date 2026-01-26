@@ -8,7 +8,7 @@ import logo from '../assets/Thep2s.png'
 const API_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000/api'
-    : 'https://backend-tau-lime-64.vercel.app/api');
+    : '/api');
 
 export default function HomePage() {
   const navigate = useNavigate()
