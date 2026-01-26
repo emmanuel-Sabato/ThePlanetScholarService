@@ -1717,12 +1717,17 @@ app.get('/api/applications/:id/download-files', async (req, res) => {
         const lastName = application.lastName || application.givenName || 'Applicant';
         const zipFileName = `${firstName}_${lastName}_documents.zip`.replace(/\s+/g, '_');
 
-        // Set response headers for ZIP download
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+        // Create archiver instance (Optimization: level 0/store as files are already compressed)
+        const archive = archiver('zip', { store: true });
+        const startTime = Date.now();
 
-        // Create archiver instance
-        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                console.warn('Archiver warning:', err);
+            } else {
+                throw err;
+            }
+        });
 
         archive.on('error', (err) => {
             console.error('Archive error:', err);
@@ -1731,12 +1736,16 @@ app.get('/api/applications/:id/download-files', async (req, res) => {
             }
         });
 
+        // Set response headers
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+
         // Pipe archive to response
         archive.pipe(res);
 
         // Download each file and add to archive
-        const downloadPromises = fileUrls.map((file, index) => {
-            return new Promise((resolve, reject) => {
+        const downloadPromises = fileUrls.map((file) => {
+            return new Promise((resolve) => {
                 const url = file.url;
                 const protocol = url.startsWith('https') ? https : http;
 
@@ -1749,20 +1758,24 @@ app.get('/api/applications/:id/download-files', async (req, res) => {
                     if (response.statusCode === 200) {
                         archive.append(response, { name: fileName });
                         response.on('end', resolve);
-                        response.on('error', reject);
+                        response.on('error', (err) => {
+                            console.warn(`[ZIP] Error reading stream for ${file.name}:`, err.message);
+                            resolve();
+                        });
                     } else {
-                        console.warn(`Failed to download ${file.name}: HTTP ${response.statusCode}`);
-                        resolve(); // Continue even if one file fails
+                        console.warn(`[ZIP] Failed to download ${file.name}: HTTP ${response.statusCode}`);
+                        resolve();
                     }
                 }).on('error', (err) => {
-                    console.warn(`Failed to download ${file.name}:`, err.message);
-                    resolve(); // Continue even if one file fails
+                    console.warn(`[ZIP] Network error for ${file.name}:`, err.message);
+                    resolve();
                 });
             });
         });
 
         await Promise.all(downloadPromises);
         await archive.finalize();
+        console.log(`[ZIP] Archive for ${zipFileName} completed in ${Date.now() - startTime}ms`);
 
     } catch (error) {
         console.error('Error downloading application files:', error);
