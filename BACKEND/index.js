@@ -1861,6 +1861,97 @@ app.post('/api/auth/verify-code', async (req, res) => {
         res.status(500).json({ error: 'Failed to verify code' });
     }
 });
+
+// Forgot Password
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const user = await db.collection('users').findOne({ email: normalizedEmail });
+
+        // Security: Don't reveal if user exists, but here we kind of have to because 
+        // we're sending an email. Standard is "If email exists, you will receive code"
+        if (!user) {
+            return res.json({ message: 'If an account exists with that email, you will receive a reset code.' });
+        }
+
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        // Store in verification_codes collection (sharing same collection for simplicity)
+        await db.collection('verification_codes').updateOne(
+            { email: normalizedEmail, type: 'password_reset' },
+            { $set: { code, expiresAt, createdAt: new Date() } },
+            { upsert: true }
+        );
+
+        const emailHtml = `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 16px;">
+                <h2 style="color: #0ea5e9; font-size: 24px; margin-bottom: 20px;">Password Reset Request</h2>
+                <p style="font-size: 16px; line-height: 1.6;">You requested to reset your password for <strong>The Planet Scholar</strong>.</p>
+                <p style="font-size: 16px; line-height: 1.6;">Please use the following 6-digit code to complete the process:</p>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; margin: 25px 0;">
+                    <h1 style="color: #0ea5e9; letter-spacing: 8px; font-size: 32px; margin: 0;">${code}</h1>
+                </div>
+                <p style="font-size: 14px; color: #64748b;">This code will expire in 60 minutes. If you did not request this, please ignore this email.</p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+                <p style="font-size: 12px; color: #94a3b8; text-align: center;">&copy; ${new Date().getFullYear()} The Planet Scholar. All rights reserved.</p>
+            </div>
+        `;
+
+        await sendSystemEmail(normalizedEmail, 'Password Reset Code - The Planet Scholar', emailHtml);
+        res.json({ message: 'If an account exists with that email, you will receive a reset code.' });
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
+// Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ error: 'Email, code, and new password are required' });
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const record = await db.collection('verification_codes').findOne({
+            email: normalizedEmail,
+            code: code.toString().trim(),
+            type: 'password_reset'
+        });
+
+        if (!record) return res.status(400).json({ error: 'Invalid or expired reset code' });
+        if (new Date() > record.expiresAt) return res.status(400).json({ error: 'Reset code expired' });
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user
+        const result = await db.collection('users').updateOne(
+            { email: normalizedEmail },
+            { $set: { password: hashedPassword, updatedAt: new Date() } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Clear reset record
+        await db.collection('verification_codes').deleteOne({ _id: record._id });
+
+        res.json({ message: 'Password reset successfully. You can now log in.' });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
 app.post('/api/auth/register', async (req, res) => {
     try {
         const {

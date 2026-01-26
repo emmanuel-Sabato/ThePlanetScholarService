@@ -7,9 +7,13 @@ import { useToast } from '../context/ToastContext'
 export default function LoginPage() {
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
-    const { login, logout, user, loading: authLoading } = useAuth()
+    const { login, logout, user, loading: authLoading, forgotPassword } = useAuth()
     const { showToast } = useToast()
     const scholarshipId = searchParams.get('scholarshipId')
+
+    const [showForgotModal, setShowForgotModal] = useState(false)
+    const [forgotEmail, setForgotEmail] = useState('')
+    const [forgotLoading, setForgotLoading] = useState(false)
 
     const [formData, setFormData] = useState({
         email: '',
@@ -121,9 +125,13 @@ export default function LoginPage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="block text-sm font-semibold text-slate-700">Password</label>
-                                <Link to="#" className="text-xs font-semibold text-sky-600 hover:text-sky-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgotModal(true)}
+                                    className="text-xs font-semibold text-sky-600 hover:text-sky-700"
+                                >
                                     Forgot password?
-                                </Link>
+                                </button>
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -181,6 +189,72 @@ export default function LoginPage() {
                     <Link to="/contact" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">Contact Support</Link>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            {showForgotModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn">
+                        <div className="p-8 space-y-6">
+                            <div className="text-center space-y-2">
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-sky-50 mb-2">
+                                    <HelpCircle className="w-6 h-6 text-sky-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900">Forgot Password?</h3>
+                                <p className="text-sm text-slate-500">Enter your email and we'll send you a 6-digit code to reset your password.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+                                    <input
+                                        type="email"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none transition-all font-medium text-slate-900"
+                                        placeholder="your@email.com"
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        disabled={forgotLoading || !forgotEmail}
+                                        onClick={async () => {
+                                            if (!forgotEmail.includes('@')) {
+                                                showToast('Please enter a valid email', 'error')
+                                                return
+                                            }
+                                            setForgotLoading(true)
+                                            try {
+                                                await forgotPassword(forgotEmail)
+                                                showToast('Reset code sent to your email!', 'success')
+                                                setShowForgotModal(false)
+                                                // We will redirect to reset-password page after a short delay
+                                                navigate(`/reset-password?email=${encodeURIComponent(forgotEmail)}`)
+                                            } catch (err) {
+                                                showToast(err.message, 'error')
+                                            } finally {
+                                                setForgotLoading(false)
+                                            }
+                                        }}
+                                        className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {forgotLoading ? 'Processing...' : 'Send Reset Code'}
+                                        {!forgotLoading && <ArrowRight size={18} />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowForgotModal(false)}
+                                        className="w-full py-3 text-slate-500 font-bold hover:text-slate-700 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

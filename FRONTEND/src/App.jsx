@@ -16,6 +16,7 @@ import AdminPage from './pages/AdminPage'
 import DashboardPage from './pages/DashboardPage'
 import RegisterPage from './pages/RegisterPage'
 import LoginPage from './pages/LoginPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import ApplicationFormPage from './pages/ApplicationFormPage'
 import NotFoundPage from './pages/NotFoundPage'
 
@@ -41,6 +42,7 @@ function App() {
               <Route path="/apply/:id" element={<ApplicationFormPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>

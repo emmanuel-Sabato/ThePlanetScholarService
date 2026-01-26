@@ -136,8 +136,38 @@ export const AuthProvider = ({ children }) => {
         return data;
     };
 
+    const forgotPassword = async (email) => {
+        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to request reset');
+        }
+        return await response.json();
+    };
+
+    const resetPassword = async (email, code, newPassword) => {
+        const response = await fetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, newPassword }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to reset password');
+        }
+        return await response.json();
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, checkAuth, updateProfile, sendVerificationCode, verifyCode }}>
+        <AuthContext.Provider value={{
+            user, loading, login, register, logout,
+            checkAuth, updateProfile, sendVerificationCode,
+            verifyCode, forgotPassword, resetPassword
+        }}>
             {children}
         </AuthContext.Provider>
     );
