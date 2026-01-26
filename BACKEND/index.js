@@ -31,6 +31,9 @@ async function connectDB() {
         await seedUsers();
         await seedEnrollmentCategories();
         await seedScholarships();
+        await seedServices();
+        await seedTeam();
+        await seedBlog();
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
         process.exit(1);
@@ -308,60 +311,175 @@ async function seedScholarships() {
 
 // Seeding Default Categories
 async function seedEnrollmentCategories() {
-    const categoriesCollection = db.collection('enrollment_categories');
+    try {
+        const categoriesCollection = db.collection('enrollment_categories');
+        const count = await categoriesCollection.countDocuments();
 
-    // Check for inconsistent data (objects instead of strings in subCategories) and fix
-    const count = await categoriesCollection.countDocuments();
-    if (count > 0) {
-        const sample = await categoriesCollection.findOne({});
-        if (sample.subCategories && sample.subCategories.length > 0 && typeof sample.subCategories[0] === 'object') {
-            console.log('🔄 Detected object-based sub-categories. Clearing to re-seed with strings...');
-            await categoriesCollection.deleteMany({});
+        // Check if existing data needs migration (object-based to string-based)
+        const sample = await categoriesCollection.findOne();
+        const needsReseed = sample && sample.subCategories && sample.subCategories.length > 0 && typeof sample.subCategories[0] === 'object';
+
+        if (count === 0 || needsReseed) {
+            if (needsReseed) {
+                console.log('🔄 Detected object-based sub-categories. Clearing to re-seed with strings...');
+                await categoriesCollection.deleteMany({});
+            } else {
+                console.log('🌱 No enrollment categories found. Seeding...');
+            }
+
+            const categories = [
+                {
+                    name: "Non-degree Chinese Language Program",
+                    subCategories: ["General Chinese Language", "Intensive Chinese Language", "Business Chinese", "Summer/Winter Camp"]
+                },
+                {
+                    name: "Bachelor's Degree Program",
+                    subCategories: ["Engineering", "Business & Economics", "Medicine", "Social Sciences", "Arts & Humanities", "Natural Sciences"]
+                },
+                {
+                    name: "Master's Degree Program",
+                    subCategories: ["MBA/Management", "Technology", "Public Policy", "International Relations", "Education", "Law"]
+                },
+                {
+                    name: "Doctoral Degree Program",
+                    subCategories: ["Advanced Research", "Engineering & Tech", "Clinical Medicine", "Fundamental Sciences", "Economics"]
+                },
+                {
+                    name: "Short-Term Program",
+                    subCategories: ["Cultural Exchange", "Enterprise Visit", "Research Internship", "Language Immersion"]
+                },
+                {
+                    name: "Self-funded Pre-University Program",
+                    subCategories: ["IFP (International Foundation Program)", "University Bridge", "HSK Preparation"]
+                }
+            ];
+            await categoriesCollection.insertMany(categories);
+            console.log('✅ Enrollment categories seeded successfully');
         }
+    } catch (error) {
+        console.error('❌ Error seeding enrollment categories:', error);
     }
+}
 
-    const newCount = await categoriesCollection.countDocuments();
-    if (newCount === 0) {
-        const defaultCategories = [
-            { name: "Self-funded Pre-University Program", subCategories: ["Self-funded Pre-University Program"] },
-            { name: "Self-funded Chinese Language Program", subCategories: ["Self-funded Chinese Language Program"] },
-            {
-                name: "Short-Term Program",
-                subCategories: [
-                    "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp",
-                    "“中泰一家亲”2025年第一期 SINO-Thai 202510",
-                    "HEU冬令营 HEU Winter Camp",
-                    "“中泰一家亲”2025年第二期 Sino-Thai 202511",
-                    "哈尔滨工程大学-圣·约瑟夫空沙旺学校人工智能体验营 HARBIN ENGINEERING UNIVERSITY-SAINT JOSEPH NAKHONSAWAN SCHOOL AI WINTER CAMP",
-                    "烟台研究院暑期学校 Summer School of YAN TAI Research Institute",
-                    "诗琳通公主奖学金 Sirindhorn Scholarship",
-                    "核学院暑期学校 Summer School of Nuclear Science",
-                    "动力国际暑期营 Power International Summer Camp项目介绍/Introduction",
-                    "智能工程国际暑期学校 Summer School of Intelligent Control项目介绍/Introduction",
-                    "材化学院国际暑期学校 Summer School of Material Science and Chemical Engineering",
-                    "YES项目 YES Program",
-                    "计算机学院国际暑期学校 Summer School of Computer Science and Technology",
-                    "物理学院国际暑期学校 Summer School of Physics"
-                ]
-            },
-            { name: "Exchange Programme", subCategories: ["校际交流交换项目 University Exchange and Visiting Programs"] },
-            { name: "Chinese Government Scholarship", subCategories: ["中国政府奖学金 Chinese Government Scholarship"] },
-            {
-                name: "International Chinese Language Teachers Scholarship",
-                subCategories: [
-                    "泰国清迈教联高级中学四周学习项目 Four-week-study program for Jiaolian Language School",
-                    "汉语进修项目 Chinese Language Program"
-                ]
-            },
-            { name: "Harbin Engineering University Scholarship", subCategories: ["HEU奖学金 HEU Scholarship项目介绍/Introduction"] },
-            { name: "Foreign Government Scholarship", subCategories: ["外国政府奖学金 Foreign Government Scholarship"] },
-            { name: "Corporate Scholarship", subCategories: ["船贸委培项目 Company Fund Program"] },
-            { name: "Self-funded Graduate Program", subCategories: ["自费研究生项目 Self-funded Graduate Program项目介绍/Introduction"] },
-            { name: "Self-funded Undergraduate Program", subCategories: ["自费本科生项目 Self-funded Undergraduate Program"] }
-        ];
-        await categoriesCollection.insertMany(defaultCategories);
-        console.log('🌱 Seeded Enrollment Categories');
-    }
+async function seedServices() {
+    try {
+        const collection = db.collection('services');
+        const count = await collection.countDocuments();
+        if (count === 0) {
+            console.log('🌱 Seeding Services...');
+            const services = [
+                {
+                    title: "Discovery Call",
+                    icon: "Target",
+                    description: "Map your profile and target scholarships that match your goals.",
+                    id: "service-1",
+                    createdAt: new Date()
+                },
+                {
+                    title: "Timeline Planning",
+                    icon: "Smartphone",
+                    description: "Deadlines, document list, and recommendation strategy.",
+                    id: "service-2",
+                    createdAt: new Date()
+                },
+                {
+                    title: "Essay Coaching",
+                    icon: "FileEdit",
+                    description: "Sessions with edits and reviewer feedback.",
+                    id: "service-3",
+                    createdAt: new Date()
+                },
+                {
+                    title: "Visa Preparation",
+                    icon: "Plane",
+                    description: "Documentation review and interview rehearsal.",
+                    id: "service-4",
+                    createdAt: new Date()
+                }
+            ];
+            await collection.insertMany(services);
+            console.log('✅ Services seeded');
+        }
+    } catch (e) { console.error('Error seeding services:', e); }
+}
+
+async function seedTeam() {
+    try {
+        const collection = db.collection('team');
+        const count = await collection.countDocuments();
+        if (count === 0) {
+            console.log('🌱 Seeding Team...');
+            const team = [
+                {
+                    name: "Dr. Elena Chen",
+                    role: "Director of Global Admissions",
+                    bio: "Former scholarship board member with 15 years of experience in international education.",
+                    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&fit=crop",
+                    id: "team-1",
+                    createdAt: new Date()
+                },
+                {
+                    name: "Marcus Thorne",
+                    role: "Senior Scholarship Advisor",
+                    bio: "Specializes in Ivy League and European governmental grants.",
+                    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&h=200&fit=crop",
+                    id: "team-2",
+                    createdAt: new Date()
+                },
+                {
+                    name: "Sarah Jenkins",
+                    role: "Visa & Logistics Specialist",
+                    bio: "Expert in student visa documentation for 30+ countries.",
+                    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&h=200&fit=crop",
+                    id: "team-3",
+                    createdAt: new Date()
+                }
+            ];
+            await collection.insertMany(team);
+            console.log('✅ Team seeded');
+        }
+    } catch (e) { console.error('Error seeding team:', e); }
+}
+
+async function seedBlog() {
+    try {
+        const collection = db.collection('blog');
+        const count = await collection.countDocuments();
+        if (count === 0) {
+            console.log('🌱 Seeding Blog...');
+            const posts = [
+                {
+                    title: "Top 10 Fully Funded Scholarships for 2025",
+                    excerpt: "Discover the most prestigious awards that cover tuition, housing, and travel.",
+                    author: "Elena Chen",
+                    date: "Jan 15, 2025",
+                    content: "Selecting the right scholarship can change your life. In this post, we look at the top global opportunities for the upcoming academic year...",
+                    id: "blog-1",
+                    createdAt: new Date()
+                },
+                {
+                    title: "How to Write a Winning Personal Statement",
+                    excerpt: "Our experts break down the anatomy of a successful scholarship essay.",
+                    author: "Marcus Thorne",
+                    date: "Jan 10, 2025",
+                    content: "Your personal statement is your chance to shine. Focus on your unique journey and how this scholarship aligns with your future impact...",
+                    id: "blog-2",
+                    createdAt: new Date()
+                },
+                {
+                    title: "Navigating the F-1 Student Visa Process",
+                    excerpt: "Everything you need to know for your US university visa interview.",
+                    author: "Sarah Jenkins",
+                    date: "Jan 05, 2025",
+                    content: "The visa interview is the final hurdle. Stay calm, be honest about your intentions, and ensure all your financial documents are in order...",
+                    id: "blog-3",
+                    createdAt: new Date()
+                }
+            ];
+            await collection.insertMany(posts);
+            console.log('✅ Blog seeded');
+        }
+    } catch (e) { console.error('Error seeding blog:', e); }
 }
 
 // Email configuration (Brevo SMTP - formerly Sendinblue)
