@@ -41,6 +41,7 @@ export default function AdminPage() {
 
     // Data states
     const [scholarships, setScholarships] = useState([])
+    const [selectedIds, setSelectedIds] = useState(new Set())
     const [scholarshipSearch, setScholarshipSearch] = useState('')
     const [categories, setCategories] = useState([])
     const [services, setServices] = useState([])
@@ -755,6 +756,55 @@ export default function AdminPage() {
         }
     }
 
+    async function handleBulkDelete(force = false) {
+        if (selectedIds.size === 0) return
+
+        const baseMsg = force
+            ? `🚨 DANGER: Some selected scholarships have ACTIVE student applications. Deleting all ${selectedIds.size} selected items will orphan these records permanently. ARE YOU SURE?`
+            : `Are you sure you want to delete ${selectedIds.size} selected scholarships?`
+
+        if (!window.confirm(baseMsg)) return
+
+        try {
+            setLoading(true)
+            const response = await fetch(`${API_URL}/scholarships/bulk-delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: Array.from(selectedIds),
+                    force: force
+                }),
+                credentials: 'include'
+            })
+
+            if (response.status === 409) {
+                const data = await response.json()
+                if (window.confirm(`${data.message}\n\nDo you want to FORCE DELETE all selected items anyway?`)) {
+                    setLoading(false)
+                    await handleBulkDelete(true)
+                }
+                return
+            }
+
+            if (response.ok) {
+                const data = await response.json()
+                setSelectedIds(new Set())
+                // Refresh scholarships
+                const currentScholarships = await fetch(`${API_URL}/scholarships`, { credentials: 'include' }).then(r => r.json())
+                setScholarships(Array.isArray(currentScholarships) ? currentScholarships : [])
+                alert(data.message || `Successfully deleted ${selectedIds.size} items.`)
+            } else {
+                const errData = await response.json().catch(() => ({}));
+                alert(`Failed to delete: ${errData.error || response.statusText}`)
+            }
+        } catch (error) {
+            console.error('Bulk delete error:', error)
+            alert('Failed to perform bulk deletion')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     async function handleUpdateMission() {
         try {
             const response = await fetch(`${API_URL}/mission`, {
@@ -1357,21 +1407,47 @@ export default function AdminPage() {
                                         <div className="card-surface p-6">
                                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                                                 <h2 className="text-xl font-semibold text-slate-900">All Scholarships ({scholarships.length})</h2>
-                                                <div className="relative w-full md:w-64">
-                                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search university or title..."
-                                                        value={scholarshipSearch}
-                                                        onChange={(e) => setScholarshipSearch(e.target.value)}
-                                                        className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
-                                                    />
+                                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                                    {selectedIds.size > 0 && (
+                                                        <button
+                                                            onClick={() => handleBulkDelete()}
+                                                            disabled={loading}
+                                                            className="px-4 py-2 bg-rose-100 text-rose-700 font-bold rounded-lg hover:bg-rose-200 transition-colors flex items-center gap-2 border border-rose-200 animate-fadeIn"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                            Delete Selected ({selectedIds.size})
+                                                        </button>
+                                                    )}
+                                                    <div className="relative w-full md:w-64">
+                                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search university or title..."
+                                                            value={scholarshipSearch}
+                                                            onChange={(e) => setScholarshipSearch(e.target.value)}
+                                                            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="overflow-x-auto">
                                                 <table className="w-full">
                                                     <thead className="bg-slate-50 border-b border-slate-200">
                                                         <tr>
+                                                            <th className="px-4 py-3 text-left w-10">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                                                                    checked={scholarships.length > 0 && selectedIds.size === scholarships.length}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setSelectedIds(new Set(scholarships.map(s => s._id || s.id)))
+                                                                        } else {
+                                                                            setSelectedIds(new Set())
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </th>
                                                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">University & Title</th>
                                                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Category & Sub</th>
                                                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Deadline</th>
@@ -1387,42 +1463,59 @@ export default function AdminPage() {
                                                                     (item.title || '').toLowerCase().includes(query) ||
                                                                     (item.subCategory || '').toLowerCase().includes(query);
                                                             })
-                                                            .map((item) => (
-                                                                <tr key={item.id} className="hover:bg-slate-50">
-                                                                    <td className="px-4 py-3">
-                                                                        <p className="text-sm font-bold text-slate-900">{item.university}</p>
-                                                                        <p className="text-xs text-slate-500 truncate max-w-[200px]">{item.title}</p>
-                                                                    </td>
-                                                                    <td className="px-4 py-3">
-                                                                        <p className="text-sm text-slate-600">{item.category}</p>
-                                                                        <p className="text-xs text-slate-400 truncate max-w-[200px]">{item.subCategory}</p>
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-sm text-slate-600">{item.deadline || '-'}</td>
-                                                                    <td className="px-4 py-3 text-sm">
-                                                                        {(() => {
-                                                                            if (!item.deadline) return <span className="text-slate-400">-</span>
-                                                                            const d = new Date(item.deadline)
-                                                                            d.setHours(23, 59, 59, 999)
-                                                                            const isExpired = d < new Date()
-                                                                            return isExpired ? (
-                                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700">CLOSED</span>
-                                                                            ) : (
-                                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">OPENED</span>
-                                                                            )
-                                                                        })()}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <div className="flex justify-end gap-2">
-                                                                            <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-sky-600 hover:bg-sky-50 rounded-lg transition">
-                                                                                <Edit2 className="h-4 w-4" /> Edit
-                                                                            </button>
-                                                                            <button onClick={() => handleDelete('scholarships', item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
-                                                                                <Trash2 className="h-4 w-4" /> Delete
-                                                                            </button>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                            .map((item) => {
+                                                                const itemId = item._id || item.id;
+                                                                const isSelected = selectedIds.has(itemId);
+                                                                return (
+                                                                    <tr key={itemId} className={`hover:bg-slate-50 transition-colors ${isSelected ? 'bg-sky-50/50' : ''}`}>
+                                                                        <td className="px-4 py-3">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                className="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                                                                                checked={isSelected}
+                                                                                onChange={() => {
+                                                                                    const next = new Set(selectedIds)
+                                                                                    if (next.has(itemId)) next.delete(itemId)
+                                                                                    else next.add(itemId)
+                                                                                    setSelectedIds(next)
+                                                                                }}
+                                                                            />
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            <p className="text-sm font-bold text-slate-900">{item.university}</p>
+                                                                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{item.title}</p>
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            <p className="text-sm text-slate-600">{item.category}</p>
+                                                                            <p className="text-xs text-slate-400 truncate max-w-[200px]">{item.subCategory}</p>
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-sm text-slate-600">{item.deadline || '-'}</td>
+                                                                        <td className="px-4 py-3 text-sm">
+                                                                            {(() => {
+                                                                                if (!item.deadline) return <span className="text-slate-400">-</span>
+                                                                                const d = new Date(item.deadline)
+                                                                                d.setHours(23, 59, 59, 999)
+                                                                                const isExpired = d < new Date()
+                                                                                return isExpired ? (
+                                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700">CLOSED</span>
+                                                                                ) : (
+                                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">OPENED</span>
+                                                                                )
+                                                                            })()}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right">
+                                                                            <div className="flex justify-end gap-2">
+                                                                                <button onClick={() => handleEdit(item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-sky-600 hover:bg-sky-50 rounded-lg transition">
+                                                                                    <Edit2 className="h-4 w-4" /> Edit
+                                                                                </button>
+                                                                                <button onClick={() => handleDelete('scholarships', item)} className="inline-flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                                                                                    <Trash2 className="h-4 w-4" /> Delete
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )
+                                                            })}
                                                     </tbody>
                                                 </table>
                                             </div>

@@ -793,6 +793,52 @@ app.delete('/api/scholarships/:id', async (req, res) => {
     }
 });
 
+// Bulk Delete Scholarships
+app.post('/api/scholarships/bulk-delete', async (req, res) => {
+    try {
+        const { ids, force } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'IDs are required' });
+        }
+
+        console.log(`[BULK DELETE] Received request for ${ids.length} scholarships (force: ${force})`);
+
+        // Check for active applications
+        const applicationCount = await db.collection('applications').countDocuments({
+            scholarshipId: { $in: ids }
+        });
+
+        if (applicationCount > 0 && !force) {
+            console.warn(`[BULK DELETE] Blocked: ${applicationCount} active applications found.`);
+            return res.status(409).json({
+                error: 'Active applications detected',
+                count: applicationCount,
+                message: `One or more selected scholarships have active student applications (${applicationCount} total). Deleting them will orphan these records.`
+            });
+        }
+
+        // Perform Deletion
+        const objectIds = ids.filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+
+        const deleteResult = await db.collection('scholarships').deleteMany({
+            $or: [
+                { id: { $in: ids } },
+                { _id: { $in: objectIds } }
+            ]
+        });
+
+        console.log(`[BULK DELETE] Successfully deleted ${deleteResult.deletedCount} scholarships.`);
+        res.json({
+            message: `Successfully deleted ${deleteResult.deletedCount} scholarships permanently.`,
+            deletedCount: deleteResult.deletedCount
+        });
+
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        res.status(500).json({ error: 'Failed to perform bulk deletion' });
+    }
+});
+
 // ========== SERVICES ==========
 app.get('/api/services', async (req, res) => {
     try {
