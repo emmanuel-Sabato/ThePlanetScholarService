@@ -333,9 +333,11 @@ export default function AdminPage() {
                     // Keep any optimistic messages that haven't been confirmed/replaced yet
                     const optimistic = prev.filter(m => m.isOptimistic)
 
-                    // Filter out any optimistic messages that are already in the fetched data
+                    // Heuristic: Only filter out an optimistic message if its content matches 
+                    // one of the last few messages in the fetched list (to avoid matching old duplicates)
+                    const recentFetched = fetchedMessages.slice(-5)
                     const uniqueOptimistic = optimistic.filter(opt =>
-                        !fetchedMessages.some(real => real.content === opt.content && real.senderId === opt.senderId)
+                        !recentFetched.some(real => real.content === opt.content && real.senderId.toString() === opt.senderId.toString())
                     )
 
                     return [...fetchedMessages, ...uniqueOptimistic]
@@ -2231,7 +2233,7 @@ export default function AdminPage() {
                                                         messages.map((msg, i) => {
                                                             const isMe = msg.senderId.toString() === currentUserId;
                                                             return (
-                                                                <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                                <div key={msg._id || msg.timestamp || i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                                     <div className={`max-w-[70%] p-3 rounded-2xl text-sm ${isMe
                                                                         ? 'bg-sky-600 text-white rounded-tr-none'
                                                                         : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm'

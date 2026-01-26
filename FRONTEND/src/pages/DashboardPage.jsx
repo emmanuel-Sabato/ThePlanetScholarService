@@ -508,9 +508,11 @@ export default function DashboardPage() {
                     // Keep any optimistic messages that haven't been confirmed/replaced yet
                     const optimistic = prev.filter(m => m.isOptimistic)
 
-                    // Filter out any optimistic messages that are already in the fetched data
+                    // Heuristic: Only filter out an optimistic message if its content matches 
+                    // one of the last few messages in the fetched list (to avoid matching old duplicates)
+                    const recentFetched = fetchedMessages.slice(-5)
                     const uniqueOptimistic = optimistic.filter(opt =>
-                        !fetchedMessages.some(real => real.content === opt.content && real.senderId === opt.senderId)
+                        !recentFetched.some(real => real.content === opt.content && real.senderId.toString() === opt.senderId.toString())
                     )
 
                     return [...fetchedMessages, ...uniqueOptimistic]
@@ -999,7 +1001,7 @@ export default function DashboardPage() {
                                         const isFirstUnread = !isMe && !msg.isRead && (i === 0 || messages[i - 1].isRead || messages[i - 1].senderId.toString() === currentUserId);
 
                                         return (
-                                            <div key={i}>
+                                            <div key={msg._id || msg.timestamp || i}>
                                                 {isFirstUnread && (
                                                     <div className="flex items-center gap-4 py-6">
                                                         <div className="h-px flex-1 bg-rose-100"></div>
