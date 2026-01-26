@@ -517,7 +517,7 @@ const sendSystemEmail = async (to, subject, htmlContent) => {
 };
 
 // Middleware
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 app.use(cors({
     origin: [
         'http://localhost:5173',
@@ -532,8 +532,8 @@ app.use(express.json());
 // Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'scholarsite-secret-key',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     store: MongoStore.create({
         client: client,
         dbName: 'scholarsite',
@@ -542,8 +542,8 @@ app.use(session({
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        secure: true, // Always true for cross-site SameSite: none
+        sameSite: 'none'
     }
 }));
 
@@ -1607,7 +1607,9 @@ app.put('/api/applications/:id', async (req, res) => {
 // Toggle Re-Apply Permission (Admin only)
 app.post('/api/applications/:id/toggle-reapply', async (req, res) => {
     try {
+        console.log(`[TOGGLE RE-APPLY] Request for AppID: ${req.params.id}. Session: ${req.session.id}. User Role: ${req.session.user?.role}`);
         if (!req.session.user || req.session.user.role !== 'admin') {
+            console.log(`[TOGGLE RE-APPLY] ACCESS DENIED. Role: ${req.session.user?.role}`);
             return res.status(403).json({ error: 'Admin access required' });
         }
 
@@ -1663,7 +1665,9 @@ app.delete('/api/applications/:id', async (req, res) => {
 // Download application files as ZIP
 app.get('/api/applications/:id/download-files', async (req, res) => {
     try {
+        console.log(`[DOWNLOAD FILES] ID: ${req.params.id}. Session: ${req.session.id}. Role: ${req.session.user?.role}`);
         if (!req.session.user || req.session.user.role !== 'admin') {
+            console.log(`[DOWNLOAD FILES] ACCESS DENIED. Role: ${req.session.user?.role}`);
             return res.status(403).json({ error: 'Unauthorized access' });
         }
 
@@ -1930,7 +1934,14 @@ app.post('/api/auth/login', async (req, res) => {
         };
 
         req.session.user = userResponse;
-        res.json(userResponse);
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({ error: 'Failed to establish session' });
+            }
+            console.log(`[AUTH] Session saved for user: ${user.email}. Role: ${userResponse.role}`);
+            res.json(userResponse);
+        });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Failed to login' });
@@ -1998,9 +2009,9 @@ app.put('/api/auth/profile', async (req, res) => {
 // Get all users with application counts
 app.get('/api/users', async (req, res) => {
     try {
-        console.log(`[GET /api/users] Request received. Session: ${req.session.id}, User: ${JSON.stringify(req.session.user)}`);
+        console.log(`[GET /api/users] Request received. Session: ${req.session.id}. User object exists: ${!!req.session.user}. Role: ${req.session.user?.role}`);
         if (!req.session.user || req.session.user.role !== 'admin') {
-            console.log(`[GET /api/users] Access denied. User Role: ${req.session.user?.role}`);
+            console.log(`[GET /api/users] ACCESS DENIED. Session ID: ${req.session.id}. Role: ${req.session.user?.role}`);
             return res.status(403).json({ error: 'Unauthorized access' });
         }
 
@@ -2103,7 +2114,9 @@ app.put('/api/users/:id', async (req, res) => {
 // Admin delete user
 app.delete('/api/users/:id', async (req, res) => {
     try {
+        console.log(`[DELETE USER] ID: ${req.params.id}. Session: ${req.session.id}. Role: ${req.session.user?.role}`);
         if (!req.session.user || req.session.user.role !== 'admin') {
+            console.log(`[DELETE USER] ACCESS DENIED. Role: ${req.session.user?.role}`);
             return res.status(403).json({ error: 'Unauthorized access' });
         }
 
