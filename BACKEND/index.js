@@ -681,13 +681,13 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ text });
     } catch (error) {
-        console.error('[ChatDebug v3] Gemini API Error details:', {
+        console.error('[ChatDebug v4-pro] Gemini API Error details:', {
             message: error.message,
             stack: error.stack,
             status: error.status
         });
         res.status(500).json({
-            error: 'Failed to get response from AI assistant [v3]',
+            error: 'Failed to get response from AI assistant [v4-pro]',
             details: error.message
         });
     }
