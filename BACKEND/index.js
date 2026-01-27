@@ -623,16 +623,26 @@ app.post('/api/chat', async (req, res) => {
         const apiKeyFull = process.env.GEMINI_API_KEY || '';
         console.log(`[ChatDebug v6] API Key check: ${apiKeyFull.substring(0, 8)}...${apiKeyFull.substring(apiKeyFull.length - 4)}`);
 
+        // Pre-diagnostic: Try to list models to see what's available
+        try {
+            const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKeyFull}`);
+            const listData = await listResponse.json();
+            const modelNames = listData.models ? listData.models.map(m => m.name) : [];
+            console.log(`[ChatDebug v7] Available models for this key:`, modelNames.join(', '));
+        } catch (e) {
+            console.log(`[ChatDebug v7] Failed to list models:`, e.message);
+        }
+
         if (!apiKeyFull || apiKeyFull === 'YOUR_GEMINI_API_KEY_HERE') {
             return res.status(500).json({ error: 'Gemini API Key not configured in Vercel environment variables' });
         }
 
-        const modelsToTry = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro"];
+        const modelsToTry = ["gemini-1.5-flash", "models/gemini-1.5-flash", "gemini-1.0-pro", "models/gemini-1.0-pro"];
         let lastError = null;
 
         for (const modelName of modelsToTry) {
             try {
-                console.log(`[ChatDebug v6] Attempting with model: ${modelName}`);
+                console.log(`[ChatDebug v7] Attempting with model: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
 
                 const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service". 
@@ -640,7 +650,7 @@ app.post('/api/chat', async (req, res) => {
                 Stats: 92% success rate, 10,000+ students helped.
                 Services: Discovery Call, Timeline Planning, Essay Coaching, Visa Preparation.
                 Contact: iradukundagasangwa18@gmail.com / +250 781 306 944.
-                Style: Professional, helpful team member. Keep it concise.`;
+                Style: Professional, helpful team member. Keep it concise;`;
 
                 const chat = model.startChat({
                     history: [
@@ -657,7 +667,7 @@ app.post('/api/chat', async (req, res) => {
                 return res.json({ text, usedModel: modelName });
             } catch (error) {
                 lastError = error;
-                console.log(`[ChatDebug v6] Model ${modelName} failed:`, error.message);
+                console.log(`[ChatDebug v7] Model ${modelName} failed:`, error.message);
                 // If it's not a 404, we might want to stop, but for now let's try all
                 if (!error.message.includes('404')) break;
             }
@@ -665,12 +675,12 @@ app.post('/api/chat', async (req, res) => {
 
         throw lastError;
     } catch (error) {
-        console.error('[ChatDebug v6] Final Error:', {
+        console.error('[ChatDebug v7] Final Error:', {
             message: error.message,
             status: error.status
         });
         res.status(500).json({
-            error: 'AI assistant failed even after fallbacks [v6]',
+            error: 'AI assistant failed [v7]',
             details: error.message
         });
     }
