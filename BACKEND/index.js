@@ -620,7 +620,7 @@ app.post('/api/chat', async (req, res) => {
         }
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-1.5-flash-latest",
             systemInstruction: `You are the official AI assistant for "The Planet Scholar Service", a premium scholarship consultancy. 
             Your goal is to help public users understand our services and guide them through their scholarship journey.
 
