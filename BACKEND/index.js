@@ -620,7 +620,7 @@ app.post('/api/chat', async (req, res) => {
         }
 
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash-latest",
+            model: "gemini-1.5-flash",
             systemInstruction: `You are the official AI assistant for "The Planet Scholar Service", a premium scholarship consultancy. 
             Your goal is to help public users understand our services and guide them through their scholarship journey.
 
@@ -681,17 +681,18 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ text });
     } catch (error) {
-        console.error('Gemini API Error details:', {
+        console.error('[ChatDebug v3] Gemini API Error details:', {
             message: error.message,
             stack: error.stack,
             status: error.status
         });
         res.status(500).json({
-            error: 'Failed to get response from AI assistant',
+            error: 'Failed to get response from AI assistant [v3]',
             details: error.message
         });
     }
 });
+
 
 
 // ========== SCHOLARSHIPS ==========
