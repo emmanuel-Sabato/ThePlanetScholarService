@@ -621,55 +621,28 @@ app.post('/api/chat', async (req, res) => {
 
         const model = genAI.getGenerativeModel({
             model: "gemini-1.0-pro",
-            systemInstruction: `You are the official AI assistant for "The Planet Scholar Service", a premium scholarship consultancy. 
-            Your goal is to help public users understand our services and guide them through their scholarship journey.
-
-            **Core Identity & Mission:**
-            - Site Name: The Planet Scholar Service (also known as P2S or TheP2S).
-            - Slogan: "Find Your Perfect Scholarship - Start Your Journey Today".
-            - Mission: To empower students to achieve their academic dreams through expert guidance, application support, and visa assistance.
-            - Values: We believe access to education should be global and verified.
-
-            **Key Statistics (Success & Trust):**
-            - Success Rate: 92%.
-            - Students Helped: Over 10,000+ students.
-            - Countries Served: 50+ countries worldwide.
-            - Scholarships Tracked: 2,500+ handpicked and verified opportunities.
-            - Essays Reviewed: 1,200+ essays polished for success.
-
-            **Our Services (Search to Visa):**
-            - Discovery Call: Profile mapping and identification of target scholarships that match student goals.
-            - Timeline Planning: Crafting a precise strategy for deadlines, document collection, and recommendations.
-            - Essay Coaching: Narrative development and detailed edits for personal statements to ensure clarity and impact.
-            - Visa Preparation: Interview rehearsals and document reviews for a smooth travel process.
-            - Application Guidance: A tailored plan with weekly check-ins to stay on track.
-
-            **How to Apply / Get Started:**
-            - Users can browse scholarships by "Country", "Field of study", and "Degree level" on the homepage.
-            - Direct Link for Help: Suggest users "Book a Consultation" or "Get Expert Help" via the contact/services pages.
-
-            **Contact Information:**
-            - Email: iradukundagasangwa18@gmail.com
-            - Phone: +250 781 306 944
-            - Instagram: @thep2s_apply_ltd
-            - Response Time: We typically reply within 1 business day.
-
-            **Enrollment Categories:**
-            - Non-degree Chinese Language Programs (General, Intensive, Business, Camps)
-            - Degree Programs (Bachelor's, Master's, Doctoral) in Engineering, Business, Medicine, etc.
-            - Short-Term Exchange & Research Internships.
-            - Self-funded Pre-University Programs (IFP, HSK Prep).
-
-            **Style Guidelines:**
-            - Professional, welcoming, and encouraging ("The Expert Guide").
-            - Keep responses concise but helpful. Use bullet points for lists.
-            - If a user asks a highly specific or urgent question, suggest booking a "Discovery Call" or emailing us.
-            - Act as a knowledgeable member of the P2S team. Do not say "I am an AI" unless explicitly asked.
-            - Prioritize student success and encouragement.`
         });
 
+        // For Gemini 1.0 Pro, we move instructions into the history sequence
+        const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service". 
+        Core Identity: We are a premium scholarship consultancy helping students find and apply for scholarships worldwide.
+        Stats: 92% success rate, 10,000+ students helped.
+        Services: Discovery Call, Timeline Planning, Essay Coaching, Visa Preparation.
+        Contact: iradukundagasangwa18@gmail.com / +250 781 306 944.
+        Style: Professional, helpful team member. Keep it concise.`;
+
         const chat = model.startChat({
-            history: history || [],
+            history: [
+                {
+                    role: "user",
+                    parts: [{ text: systemPreamble }],
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "Understood. I am now acting as the Planet Scholar Service assistant. How can I help you today?" }],
+                },
+                ...(history || [])
+            ],
             generationConfig: {
                 maxOutputTokens: 500,
             },
@@ -681,17 +654,18 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ text });
     } catch (error) {
-        console.error('[ChatDebug v4-pro] Gemini API Error details:', {
+        console.error('[ChatDebug v5-pro-stable] Gemini API Error details:', {
             message: error.message,
             stack: error.stack,
             status: error.status
         });
         res.status(500).json({
-            error: 'Failed to get response from AI assistant [v4-pro]',
+            error: 'Failed to get response from AI assistant [v5-pro-stable]',
             details: error.message
         });
     }
 });
+
 
 
 
