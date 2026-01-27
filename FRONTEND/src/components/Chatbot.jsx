@@ -59,7 +59,7 @@ export default function Chatbot() {
                 return;
             }
 
-            setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+            setMessages(prev => [...prev, { role: 'model', text: data.details || data.text }]);
         } catch (error) {
             console.error('Chat Error:', error);
             setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I'm having trouble connecting to my brain! 🧠 Please ensure your API Key is valid and active." }]);

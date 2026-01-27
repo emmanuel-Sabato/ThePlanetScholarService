@@ -681,10 +681,18 @@ app.post('/api/chat', async (req, res) => {
 
         res.json({ text });
     } catch (error) {
-        console.error('Gemini API Error:', error);
-        res.status(500).json({ error: 'Failed to get response from AI assistant' });
+        console.error('Gemini API Error details:', {
+            message: error.message,
+            stack: error.stack,
+            status: error.status
+        });
+        res.status(500).json({
+            error: 'Failed to get response from AI assistant',
+            details: error.message
+        });
     }
 });
+
 
 // ========== SCHOLARSHIPS ==========
 
