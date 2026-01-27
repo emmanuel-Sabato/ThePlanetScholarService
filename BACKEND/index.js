@@ -619,48 +619,58 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: 'Gemini API Key not configured by admin' });
         }
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.0-pro",
-        });
+        // Debug: Verify API key is loaded (masked)
+        const apiKeyFull = process.env.GEMINI_API_KEY || '';
+        console.log(`[ChatDebug v6] API Key check: ${apiKeyFull.substring(0, 8)}...${apiKeyFull.substring(apiKeyFull.length - 4)}`);
 
-        // For Gemini 1.0 Pro, we move instructions into the history sequence
-        const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service". 
-        Core Identity: We are a premium scholarship consultancy helping students find and apply for scholarships worldwide.
-        Stats: 92% success rate, 10,000+ students helped.
-        Services: Discovery Call, Timeline Planning, Essay Coaching, Visa Preparation.
-        Contact: iradukundagasangwa18@gmail.com / +250 781 306 944.
-        Style: Professional, helpful team member. Keep it concise.`;
+        if (!apiKeyFull || apiKeyFull === 'YOUR_GEMINI_API_KEY_HERE') {
+            return res.status(500).json({ error: 'Gemini API Key not configured in Vercel environment variables' });
+        }
 
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: systemPreamble }],
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I am now acting as the Planet Scholar Service assistant. How can I help you today?" }],
-                },
-                ...(history || [])
-            ],
-            generationConfig: {
-                maxOutputTokens: 500,
-            },
-        });
+        const modelsToTry = ["gemini-1.5-flash", "gemini-pro", "gemini-1.0-pro"];
+        let lastError = null;
 
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
-        const text = response.text();
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`[ChatDebug v6] Attempting with model: ${modelName}`);
+                const model = genAI.getGenerativeModel({ model: modelName });
 
-        res.json({ text });
+                const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service". 
+                Core Identity: We are a premium scholarship consultancy helping students find and apply for scholarships worldwide.
+                Stats: 92% success rate, 10,000+ students helped.
+                Services: Discovery Call, Timeline Planning, Essay Coaching, Visa Preparation.
+                Contact: iradukundagasangwa18@gmail.com / +250 781 306 944.
+                Style: Professional, helpful team member. Keep it concise.`;
+
+                const chat = model.startChat({
+                    history: [
+                        { role: "user", parts: [{ text: systemPreamble }] },
+                        { role: "model", parts: [{ text: "Understood. I'm ready to help students as the Planet Scholar assistant." }] },
+                        ...(history || [])
+                    ],
+                });
+
+                const result = await chat.sendMessage(message);
+                const response = await result.response;
+                const text = response.text();
+
+                return res.json({ text, usedModel: modelName });
+            } catch (error) {
+                lastError = error;
+                console.log(`[ChatDebug v6] Model ${modelName} failed:`, error.message);
+                // If it's not a 404, we might want to stop, but for now let's try all
+                if (!error.message.includes('404')) break;
+            }
+        }
+
+        throw lastError;
     } catch (error) {
-        console.error('[ChatDebug v5-pro-stable] Gemini API Error details:', {
+        console.error('[ChatDebug v6] Final Error:', {
             message: error.message,
-            stack: error.stack,
             status: error.status
         });
         res.status(500).json({
-            error: 'Failed to get response from AI assistant [v5-pro-stable]',
+            error: 'AI assistant failed even after fallbacks [v6]',
             details: error.message
         });
     }
