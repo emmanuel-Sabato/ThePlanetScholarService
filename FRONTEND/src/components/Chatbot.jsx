@@ -48,12 +48,19 @@ export default function Chatbot() {
             });
 
             const data = await response.json();
-            if (data.error) throw new Error(data.error);
+            if (data.error) {
+                if (data.error.includes('API Key not configured')) {
+                    setMessages(prev => [...prev, { role: 'model', text: "It looks like the AI assistant is not fully configured yet. Please make sure the admin has added the GEMINI_API_KEY to the .env file!" }]);
+                } else {
+                    throw new Error(data.error);
+                }
+                return;
+            }
 
             setMessages(prev => [...prev, { role: 'model', text: data.text }]);
         } catch (error) {
             console.error('Chat Error:', error);
-            setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I'm having trouble connecting right now. Please try again later or book a Discovery Call for urgent help!" }]);
+            setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I'm having trouble connecting to my brain! 🧠 Please ensure your API Key is valid and active." }]);
         } finally {
             setIsLoading(false);
         }
@@ -114,8 +121,8 @@ export default function Chatbot() {
                                             {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                                         </div>
                                         <div className={`p-3 rounded-2xl text-sm shadow-sm ${msg.role === 'user'
-                                                ? 'bg-sky-600 text-white rounded-tr-none'
-                                                : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                                            ? 'bg-sky-600 text-white rounded-tr-none'
+                                            : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                                             }`}>
                                             {msg.text}
                                         </div>
