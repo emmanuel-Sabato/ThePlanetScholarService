@@ -9,6 +9,8 @@ const { MongoStore } = require('connect-mongo');
 const archiver = require('archiver');
 const https = require('https');
 const http = require('http');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -606,7 +608,71 @@ app.delete('/api/enrollment-categories/:id', async (req, res) => {
     }
 });
 
+// ========== AI CHATBOT ==========
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { message, history } = req.body;
+
+        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+            return res.status(500).json({ error: 'Gemini API Key not configured by admin' });
+        }
+
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: `You are the official AI assistant for "The Planet Scholar Service", a premium scholarship consultancy.
+            Your goal is to help public users understand our services and guide them through the website.
+
+            **Context about The Planet Scholar Service:**
+            - Site Purpose: We help students find and apply for scholarships, particularly in China and other global destinations.
+            - Services:
+                1. Discovery Call: Profile mapping and target scholarship identification.
+                2. Timeline Planning: Deadlines, document list, and recommendation strategy.
+                3. Essay Coaching: Edits and reviewer feedback.
+                4. Visa Preparation: Documentation review and interview rehearsal.
+            - Enrollment Categories:
+                - Non-degree Chinese Language Programs (General, Intensive, Business, Camps)
+                - Bachelor's, Master's, and Doctoral Degree Programs (Engineering, Business, Medicine, etc.)
+                - Short-Term Programs (Cultural Exchange, Research Internship, etc.)
+                - Self-funded Pre-University Programs (IFP, HSK Prep)
+            - Our Team:
+                - Dr. Elena Chen: Director of Global Admissions (formerly on scholarship boards).
+                - Marcus Thorne: Senior Scholarship Advisor (Ivy League & European grants expert).
+                - Sarah Jenkins: Visa & Logistics Specialist (Expert in documentation for 30+ countries).
+            - FAQ Highlights:
+                - We offer support for fully funded scholarships.
+                - We guide students through the entire application cycle.
+                - We specialize in Chinese Government Scholarships and university-specific awards.
+
+            **Style Guidelines:**
+            - Professional, welcoming, and encouraging.
+            - Keep responses concise but helpful.
+            - If you don't know the answer, suggest they book a "Discovery Call".
+            - Do not mention being an AI unless asked; act as a helpful team member.
+            - Always prioritize the student's success.`
+        });
+
+        const chat = model.startChat({
+            history: history || [],
+            generationConfig: {
+                maxOutputTokens: 500,
+            },
+        });
+
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ text });
+    } catch (error) {
+        console.error('Gemini API Error:', error);
+        res.status(500).json({ error: 'Failed to get response from AI assistant' });
+    }
+});
+
 // ========== SCHOLARSHIPS ==========
+
 app.get('/api/scholarships', async (req, res) => {
     try {
         const items = await db.collection('scholarships').find().toArray();

@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import Chatbot from './Chatbot'
 
 export default function Layout({ children }) {
   const location = useLocation()
@@ -13,7 +14,9 @@ export default function Layout({ children }) {
       {!isDashboard && <Navbar />}
       <main className={`flex-1 ${!isDashboard ? 'pt-24' : ''}`}>{children}</main>
       {!isDashboard && <Footer />}
+      {!isDashboard && <Chatbot />}
     </div>
   )
 }
+
 
