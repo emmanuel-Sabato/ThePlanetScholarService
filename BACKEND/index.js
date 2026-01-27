@@ -637,7 +637,7 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: 'Gemini API Key not configured in Vercel environment variables' });
         }
 
-        const modelsToTry = ["gemini-1.5-flash", "models/gemini-1.5-flash", "gemini-1.0-pro", "models/gemini-1.0-pro"];
+        const modelsToTry = ["gemini-2.0-flash", "gemini-flash-latest", "gemini-1.5-flash"];
         let lastError = null;
 
         for (const modelName of modelsToTry) {
