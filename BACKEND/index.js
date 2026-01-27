@@ -637,15 +637,15 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: 'Gemini API Key not configured in Vercel environment variables' });
         }
 
-        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-flash-latest", "gemini-pro-latest"];
+        const modelsToTry = ["gemini-2.0-flash-exp", "gemini-flash-lite-latest", "gemini-pro-latest", "gemini-1.5-pro"];
         let lastError = null;
 
         for (const modelName of modelsToTry) {
             try {
-                console.log(`[ChatDebug v7] Attempting with model: ${modelName}`);
+                console.log(`[ChatDebug v10] Attempting with model: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
 
-                const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service". 
+                const systemPreamble = `You are the official AI assistant for "The Planet Scholar Service".
                 Core Identity: We are a premium scholarship consultancy helping students find and apply for scholarships worldwide.
                 Stats: 92% success rate, 10,000+ students helped.
                 Services: Discovery Call, Timeline Planning, Essay Coaching, Visa Preparation.
@@ -667,21 +667,22 @@ app.post('/api/chat', async (req, res) => {
                 return res.json({ text, usedModel: modelName });
             } catch (error) {
                 lastError = error;
-                console.log(`[ChatDebug v7] Model ${modelName} failed:`, error.message);
-                // If it's not a 404, we might want to stop, but for now let's try all
-                if (!error.message.includes('404')) break;
+                console.log(`[ChatDebug v10] Model ${modelName} failed:`, error.message);
+                // Continue to the next model for ANY error (404, 429, etc.)
+                continue;
             }
         }
 
         throw lastError;
     } catch (error) {
-        console.error('[ChatDebug v7] Final Error:', {
+        console.error('[ChatDebug v10] Final Error:', {
             message: error.message,
             status: error.status
         });
+        const isQuotaError = error.message.includes('Limit: 0') || error.message.includes('quota');
         res.status(500).json({
-            error: 'AI assistant failed [v7]',
-            details: error.message
+            error: 'AI assistant failed [v10]',
+            details: isQuotaError ? "Your API Key has 0 quota for these models in this region. Please try a NEW key from Google AI Studio." : error.message
         });
     }
 });
