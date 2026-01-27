@@ -35,11 +35,13 @@ export default function Chatbot() {
         setIsLoading(true);
 
         try {
-            // Map history for Gemini API
-            const history = messages.map(msg => ({
-                role: msg.role === 'model' ? 'model' : 'user',
-                parts: [{ text: msg.text }]
-            }));
+            // Map history for Gemini API - Exclude the very first greeting and ensure sequence
+            const history = messages
+                .filter((_, index) => index > 0) // Skip the initial "Hello" assistant message
+                .map(msg => ({
+                    role: msg.role === 'model' ? 'model' : 'user',
+                    parts: [{ text: msg.text }]
+                }));
 
             const response = await fetch(`${API_URL}/chat`, {
                 method: 'POST',
