@@ -38,8 +38,6 @@ async function connectDB() {
         if (!initFlag) {
             console.log('🚀 System not initialized. Running first-time setup...');
             await seedUsers();
-            await seedEnrollmentCategories();
-            await seedScholarships();
             await seedServices();
             await seedTeam();
             await seedBlog();
@@ -47,8 +45,12 @@ async function connectDB() {
             await settings.insertOne({ key: 'is_initialized', value: true, timestamp: new Date() });
             console.log('✅ System initialization complete.');
         } else {
-            console.log('🛡️ System already initialized. Skipping auto-seeding.');
+            console.log('🛡️ System already initialized. Checking for updates...');
         }
+
+        // Always check for category and scholarship updates/seeding
+        await seedEnrollmentCategories();
+        await seedScholarships();
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
         process.exit(1);
@@ -77,236 +79,119 @@ async function seedUsers() {
 
 // Seeding Scholarships (Universities)
 async function seedScholarships() {
-    const scholarshipsCollection = db.collection('scholarships');
-    const count = await scholarshipsCollection.countDocuments();
+    try {
+        const scholarshipsCollection = db.collection('scholarships');
+        const count = await scholarshipsCollection.countDocuments();
 
-    // Only seed if empty. The global guard in connectDB handles "first-time" logic.
-    if (count === 0) {
-        console.log('🌱 Seeding initial Scholarships...');
-        const scholarships = [];
+        // Check if existing data needs update (missing metadata)
+        const sample = await scholarshipsCollection.findOne();
+        const needsUpdate = sample && !sample.fundingType;
 
-        // Helper to create 4 universities per sub-category
-        const addUnis = (category, subCategory, unis) => {
-            unis.forEach(uni => {
-                scholarships.push({
-                    id: `scholarship-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    title: `${subCategory} at ${uni.name}`,
-                    university: uni.name,
-                    location: uni.location,
-                    country: "China",
-                    degree: "Non-Degree",
-                    field: "General",
-                    deadline: "2030-12-31",
-                    description: `Experience the ${subCategory} at ${uni.name}. This program offers a unique opportunity to study in ${uni.location}.`,
-                    eligibility: "Open to international students.",
-                    benefits: "Full tuition waiver and accommodation.",
-                    image: "", // Placeholder or default
-                    programMode: "On-Campus",
-                    programType: "Full-time",
-                    language: "English",
-                    category: category,
-                    subCategory: subCategory,
-                    tuition: "Free",
-                    duration: "1 Year",
-                    fastTrack: false,
-                    isPromoted: false,
-                    createdAt: new Date()
+        if (count === 0 || needsUpdate) {
+            if (needsUpdate) {
+                console.log('🔄 Detected missing scholarship metadata. Clearing to re-seed...');
+                await scholarshipsCollection.deleteMany({});
+            } else {
+                console.log('🌱 Seeding initial Scholarships...');
+            }
+
+            const scholarships = [];
+
+            // Helper to create 4 universities per sub-category
+            const addUnis = (category, subCategory, unis, studyLevel, fundingType, benefits = {}, hsk = "None", ielts = "None") => {
+                unis.forEach(uni => {
+                    scholarships.push({
+                        id: `scholarship-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        title: `${subCategory} at ${uni.name}`,
+                        university: uni.name,
+                        location: uni.location,
+                        country: "China",
+                        degree: studyLevel === "Chinese Language" ? "Non-Degree" : studyLevel,
+                        field: "General",
+                        deadline: "2030-12-31",
+                        description: `Experience the ${subCategory} at ${uni.name}. This program offers a unique opportunity to study in ${uni.location}.`,
+                        eligibility: "Open to international students.",
+                        benefits: fundingType === "Scholarship" ? "Scholarship benefits included." : "Self-funded program.",
+                        image: "", // Placeholder or default
+                        programMode: "On-Campus",
+                        programType: "Full-time",
+                        language: "English",
+                        category: category,
+                        subCategory: subCategory,
+                        tuition: fundingType === "Scholarship" ? "Free" : "Self-paid",
+                        duration: studyLevel === "Chinese Language" ? "6 Months - 1 Year" : "2-4 Years",
+                        fastTrack: false,
+                        isPromoted: false,
+                        // NEW METADATA FOR 7-STEP WIZARD
+                        studyLevel,
+                        fundingType,
+                        benefitsDetails: {
+                            tuition: benefits.tuition || false,
+                            accommodation: benefits.accommodation || false,
+                            stipend: benefits.stipend || 0
+                        },
+                        hskRequirement: hsk,
+                        ieltsRequirement: ielts,
+                        createdAt: new Date()
+                    });
                 });
-            });
-        };
+            };
 
-        // --- Populating Data based on Enrollment Categories ---
+            // --- Populating Data based on Enrollment Categories ---
 
-        // 1. Short-Term Program
-        addUnis("Short-Term Program", "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Harbin Institute of Technology", location: "Harbin" },
-            { name: "Northeast Forestry University", location: "Harbin" },
-            { name: "Heilongjiang University", location: "Harbin" }
-        ]);
+            // 1. Chinese Language (Scholarship)
+            const fullScholarship = { tuition: true, accommodation: true, stipend: 3000 };
+            const tuitionHostel = { tuition: true, accommodation: true, stipend: 0 };
+            const tuitionOnly = { tuition: true, accommodation: false, stipend: 0 };
 
-        addUnis("Short-Term Program", "“中泰一家亲”2025年第一期 SINO-Thai 202510", [
-            { name: "Chiang Mai University", location: "Chiang Mai" },
-            { name: "Chulalongkorn University", location: "Bangkok" },
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Mahidol University", location: "Bangkok" }
-        ]);
+            addUnis("Short-Term Program", "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp", [
+                { name: "Harbin Engineering University", location: "Harbin" },
+                { name: "Harbin Institute of Technology", location: "Harbin" }
+            ], "Chinese Language", "Scholarship", tuitionHostel);
 
-        addUnis("Short-Term Program", "HEU冬令营 HEU Winter Camp", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Ocean University of China", location: "Qingdao" },
-            { name: "Dalian Maritime University", location: "Dalian" },
-            { name: "Wuhan University of Technology", location: "Wuhan" }
-        ]);
+            addUnis("Chinese Government Scholarship", "中国政府奖学金 Chinese Government Scholarship", [
+                { name: "Zhejiang University", location: "Hangzhou" },
+                { name: "Wuhan University", location: "Wuhan" }
+            ], "Master’s Degree", "Scholarship", fullScholarship, "HSK 5", "6.5");
 
-        addUnis("Short-Term Program", "“中泰一家亲”2025年第二期 Sino-Thai 202511", [
-            { name: "Prince of Songkla University", location: "Songkhla" },
-            { name: "Burapha University", location: "Chonburi" },
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Khon Kaen University", location: "Khon Kaen" }
-        ]);
+            addUnis("Bachelor's Degree Program", "Engineering Studies", [
+                { name: "Tsinghua University", location: "Beijing" },
+                { name: "Peking University", location: "Beijing" }
+            ], "Bachelor Degree", "Scholarship", tuitionOnly, "HSK 4", "6.0");
 
-        // Add a few more examples for other categories just to have data
-        addUnis("Self-funded Pre-University Program", "Self-funded Pre-University Program", [
-            { name: "Zhejiang University", location: "Hangzhou" },
-            { name: "Fudan University", location: "Shanghai" },
-            { name: "Nanjing University", location: "Nanjing" },
-            { name: "Tsinghua University", location: "Beijing" }
-        ]);
+            addUnis("Doctoral Degree Program", "Advanced Research", [
+                { name: "Fudan University", location: "Shanghai" },
+                { name: "Nanjing University", location: "Nanjing" }
+            ], "PhD", "Scholarship", fullScholarship, "HSK 6", "7.0");
 
-        addUnis("Self-funded Chinese Language Program", "Self-funded Chinese Language Program", [
-            { name: "Beijing Language and Culture University", location: "Beijing" },
-            { name: "Shanghai International Studies University", location: "Shanghai" },
-            { name: "Heilongjiang University", location: "Harbin" },
-            { name: "Harbin Normal University", location: "Harbin" }
-        ]);
+            // 2. Self-Funded
+            addUnis("Self-funded Undergraduate Program", "Bachelor of Business", [
+                { name: "Shanghai Jiao Tong University", location: "Shanghai" },
+                { name: "Sun Yat-sen University", location: "Guangzhou" }
+            ], "Bachelor Degree", "Self-Funded");
 
-        // More Short-Term Programs
-        addUnis("Short-Term Program", "哈尔滨工程大学-圣·约瑟夫空沙旺学校人工智能体验营 HARBIN ENGINEERING UNIVERSITY-SAINT JOSEPH NAKHONSAWAN SCHOOL AI WINTER CAMP", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Saint Joseph Nakhonsawan School", location: "Nakhonsawan" },
-            { name: "Harbin Institute of Technology", location: "Harbin" },
-            { name: "Heilongjiang University", location: "Harbin" }
-        ]);
+            addUnis("Self-funded Chinese Language Program", "Intensive Chinese", [
+                { name: "Beijing Language and Culture University", location: "Beijing" },
+                { name: "Heilongjiang University", location: "Harbin" }
+            ], "Chinese Language", "Self-Funded");
 
-        addUnis("Short-Term Program", "烟台研究院暑期学校 Summer School of YAN TAI Research Institute", [
-            { name: "Yantai University", location: "Yantai" },
-            { name: "Harbin Engineering University (Yantai Campus)", location: "Yantai" },
-            { name: "Ludong University", location: "Yantai" },
-            { name: "Shandong University", location: "Jinan" }
-        ]);
+            addUnis("Self-funded Graduate Program", "Master of Finance", [
+                { name: "Zhejiang University", location: "Hangzhou" },
+                { name: "Nankai University", location: "Tianjin" }
+            ], "Master’s Degree", "Self-Funded");
 
-        addUnis("Short-Term Program", "诗琳通公主奖学金 Sirindhorn Scholarship", [
-            { name: "Peking University", location: "Beijing" },
-            { name: "Wuhan University", location: "Wuhan" },
-            { name: "Shandong University", location: "Jinan" },
-            { name: "Xiamen University", location: "Xiamen" }
-        ]);
+            addUnis("Self-funded Pre-University Program", "University Bridge", [
+                { name: "Zhejiang University", location: "Hangzhou" },
+                { name: "Fudan University", location: "Shanghai" }
+            ], "Advanced Diploma", "Self-Funded");
 
-        addUnis("Short-Term Program", "核学院暑期学校 Summer School of Nuclear Science", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Tsinghua University", location: "Beijing" },
-            { name: "Xi'an Jiaotong University", location: "Xi'an" },
-            { name: "University of Science and Technology of China", location: "Hefei" }
-        ]);
-
-        addUnis("Short-Term Program", "动力国际暑期营 Power International Summer Camp项目介绍/Introduction", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Shanghai Jiao Tong University", location: "Shanghai" },
-            { name: "Tianjin University", location: "Tianjin" },
-            { name: "Huazhong University of Science and Technology", location: "Wuhan" }
-        ]);
-
-        addUnis("Short-Term Program", "智能工程国际暑期学校 Summer School of Intelligent Control项目介绍/Introduction", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Beihang University", location: "Beijing" },
-            { name: "Northeastern University", location: "Shenyang" },
-            { name: "Southeast University", location: "Nanjing" }
-        ]);
-
-        addUnis("Short-Term Program", "材化学院国际暑期学校 Summer School of Material Science and Chemical Engineering", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Tianjin University", location: "Tianjin" },
-            { name: "Beijing University of Chemical Technology", location: "Beijing" },
-            { name: "East China University of Science and Technology", location: "Shanghai" }
-        ]);
-
-        addUnis("Short-Term Program", "YES项目 YES Program", [
-            { name: "China Foreign Affairs University", location: "Beijing" },
-            { name: "Beijing International Studies University", location: "Beijing" },
-            { name: "Shanghai International Studies University", location: "Shanghai" },
-            { name: "Guangdong University of Foreign Studies", location: "Guangzhou" }
-        ]);
-
-        addUnis("Short-Term Program", "计算机学院国际暑期学校 Summer School of Computer Science and Technology", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Zhejiang University", location: "Hangzhou" },
-            { name: "Nanjing University", location: "Nanjing" },
-            { name: "University of Electronic Science and Technology of China", location: "Chengdu" }
-        ]);
-
-        addUnis("Short-Term Program", "物理学院国际暑期学校 Summer School of Physics", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Peking University", location: "Beijing" },
-            { name: "Nanjing University", location: "Nanjing" },
-            { name: "Fudan University", location: "Shanghai" }
-        ]);
-
-        // Exchange Programme
-        addUnis("Exchange Programme", "校际交流交换项目 University Exchange and Visiting Programs", [
-            { name: "Peking University", location: "Beijing" },
-            { name: "Tsinghua University", location: "Beijing" },
-            { name: "Fudan University", location: "Shanghai" },
-            { name: "Shanghai Jiao Tong University", location: "Shanghai" }
-        ]);
-
-        // Chinese Government Scholarship
-        addUnis("Chinese Government Scholarship", "中国政府奖学金 Chinese Government Scholarship", [
-            { name: "Zhejiang University", location: "Hangzhou" },
-            { name: "Wuhan University", location: "Wuhan" },
-            { name: "Huazhong University of Science and Technology", location: "Wuhan" },
-            { name: "Sun Yat-sen University", location: "Guangzhou" }
-        ]);
-
-        // International Chinese Language Teachers Scholarship
-        addUnis("International Chinese Language Teachers Scholarship", "泰国清迈教联高级中学四周学习项目 Four-week-study program for Jiaolian Language School", [
-            { name: "Yunnan Normal University", location: "Kunming" },
-            { name: "Guangxi University", location: "Nanning" },
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Chiang Mai University", location: "Chiang Mai" }
-        ]);
-
-        addUnis("International Chinese Language Teachers Scholarship", "汉语进修项目 Chinese Language Program", [
-            { name: "Beijing Normal University", location: "Beijing" },
-            { name: "East China Normal University", location: "Shanghai" },
-            { name: "Northeast Normal University", location: "Changchun" },
-            { name: "Shaanxi Normal University", location: "Xi'an" }
-        ]);
-
-        // Harbin Engineering University Scholarship
-        addUnis("Harbin Engineering University Scholarship", "HEU奖学金 HEU Scholarship项目介绍/Introduction", [
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Harbin Engineering University", location: "Harbin" },
-            { name: "Harbin Engineering University", location: "Harbin" }
-        ]);
-
-        // Foreign Government Scholarship
-        addUnis("Foreign Government Scholarship", "外国政府奖学金 Foreign Government Scholarship", [
-            { name: "China Agricultural University", location: "Beijing" },
-            { name: "Beihang University", location: "Beijing" },
-            { name: "Beijing Institute of Technology", location: "Beijing" },
-            { name: "Tongji University", location: "Shanghai" }
-        ]);
-
-        // Corporate Scholarship
-        addUnis("Corporate Scholarship", "船贸委培项目 Company Fund Program", [
-            { name: "Dalian Maritime University", location: "Dalian" },
-            { name: "Shanghai Maritime University", location: "Shanghai" },
-            { name: "Wuhan University of Technology", location: "Wuhan" },
-            { name: "Harbin Engineering University", location: "Harbin" }
-        ]);
-
-        // Self-funded Graduate Program
-        addUnis("Self-funded Graduate Program", "自费研究生项目 Self-funded Graduate Program项目介绍/Introduction", [
-            { name: "Tsinghua University", location: "Beijing" },
-            { name: "Peking University", location: "Beijing" },
-            { name: "Zhejiang University", location: "Hangzhou" },
-            { name: "Shanghai Jiao Tong University", location: "Shanghai" }
-        ]);
-
-        // Self-funded Undergraduate Program
-        addUnis("Self-funded Undergraduate Program", "自费本科生项目 Self-funded Undergraduate Program", [
-            { name: "Fudan University", location: "Shanghai" },
-            { name: "Nanjing University", location: "Nanjing" },
-            { name: "University of Science and Technology of China", location: "Hefei" },
-            { name: "Harbin Institute of Technology", location: "Harbin" }
-        ]);
-
-        if (scholarships.length > 0) {
-            await scholarshipsCollection.insertMany(scholarships);
-            console.log(`🌱 Seeded ${scholarships.length} Scholarships`);
+            if (scholarships.length > 0) {
+                await scholarshipsCollection.insertMany(scholarships);
+                console.log(`✅ Seeded ${scholarships.length} Scholarships with metadata`);
+            }
         }
+    } catch (error) {
+        console.error('❌ Error seeding scholarships:', error);
     }
 }
 

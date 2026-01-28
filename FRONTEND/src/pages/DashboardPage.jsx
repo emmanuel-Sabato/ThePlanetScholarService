@@ -13,6 +13,58 @@ const API_URL = import.meta.env.VITE_API_URL ||
         ? 'http://localhost:3000/api'
         : '/api');
 
+// Enrollment flow configuration for 7-step wizard
+const ENROLLMENT_CONFIG = {
+    levelsOfStudy: [
+        {
+            id: 'chinese_language',
+            name: 'Chinese Language',
+            hasFundingOptions: true,
+            subPrograms: ['One Year Program', 'One Semester Program']
+        },
+        { id: 'advanced_diploma', name: 'Advanced Diploma' },
+        { id: 'bachelor', name: 'Bachelor Degree' },
+        { id: 'masters', name: "Master's Degree" },
+        { id: 'phd', name: 'PhD' }
+    ],
+    fundingTypes: [
+        { id: 'scholarship', name: 'Scholarship' },
+        { id: 'self_funded', name: 'Self-Funded' }
+    ],
+    scholarshipBenefits: [
+        { id: 'full', name: 'Free tuition + Free hostel + Monthly stipend' },
+        { id: 'tuition_hostel', name: 'Free tuition + Free hostel' },
+        { id: 'tuition_only', name: 'Free tuition only' },
+        { id: 'half_tuition', name: 'Half tuition' }
+    ],
+    languages: [
+        { id: 'chinese', name: 'Chinese-taught' },
+        { id: 'english', name: 'English-taught' }
+    ],
+    programsByLevel: {
+        advanced_diploma: [
+            'Big Data Technology', 'Computer Science', 'Software Engineering', 'Nursing',
+            'Tourism Management', 'International Economics & Trade', 'Animal Husbandry',
+            'Crop Production', 'Agricultural Mechanization'
+        ],
+        bachelor: [
+            'Computer Science', 'Software Engineering', 'Artificial Intelligence',
+            'Engineering (Civil, Mechanical, Electrical, Chemical)', 'Medicine / Nursing / Pharmacy',
+            'Business Administration', 'Architecture & Urban Planning', 'Logistics & Supply Chain',
+            'Environmental & Agricultural Sciences', 'Mathematics, Physics, English, Geology, Ecology'
+        ],
+        masters: [
+            'Computer Science & AI', 'Engineering Programs', 'Medicine & Pharmacy',
+            'Business Administration', 'Biotechnology', 'Environmental & Material Sciences',
+            'Architecture & Urban/Rural Development'
+        ],
+        phd: [
+            'Software Engineering', 'Artificial Intelligence', 'Engineering Fields',
+            'Medicine & Pharmacy', 'Agricultural Sciences', 'Environmental, Geological & Material Sciences'
+        ]
+    }
+};
+
 export default function DashboardPage() {
     const { user, loading: authLoading, logout, updateProfile } = useAuth()
     const { showToast } = useToast()
@@ -36,17 +88,26 @@ export default function DashboardPage() {
         return () => clearInterval(timer)
     }, [])
 
-    // Scholarship picker / Start Application state
+    // Scholarship picker / Start Application state (7-step flow)
     const [showStartAppModal, setShowStartAppModal] = useState(false)
-    const [startAppStep, setStartAppStep] = useState(1)
-    const [categories, setCategories] = useState([])
-    const [subCategories, setSubCategories] = useState([])
+    const [startAppStep, setStartAppStep] = useState(1) // 1=Terms, 2=Level, 3=Funding, 4=Benefits, 5=Language, 6=Programs, 7=Confirm
     const [agreedToTerms, setAgreedToTerms] = useState(false)
-    const [selectedCategory, setSelectedCategory] = useState('')
-    const [selectedSubCategory, setSelectedSubCategory] = useState('')
+
+    // New 7-step flow state
+    const [selectedLevel, setSelectedLevel] = useState('') // chinese_language, advanced_diploma, bachelor, masters, phd
+    const [chineseSubProgram, setChineseSubProgram] = useState('') // One Year Program, One Semester Program
+    const [selectedFunding, setSelectedFunding] = useState('') // scholarship, self_funded
+    const [selectedBenefits, setSelectedBenefits] = useState('') // full, tuition_hostel, tuition_only, half_tuition
+    const [selectedLanguage, setSelectedLanguage] = useState('') // chinese, english
     const [availableScholarships, setAvailableScholarships] = useState([])
     const [scholarshipLoading, setScholarshipLoading] = useState(false)
     const [creatingApp, setCreatingApp] = useState(false)
+
+    // Legacy state for compatibility
+    const [categories, setCategories] = useState([])
+    const [subCategories, setSubCategories] = useState([])
+    const [selectedCategory, setSelectedCategory] = useState('')
+    const [selectedSubCategory, setSelectedSubCategory] = useState('')
 
     // Profile form state
     const [profileData, setProfileData] = useState({
@@ -1215,7 +1276,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Start Application Modal (3 Steps) */}
+            {/* Start Application Modal (7 Steps) */}
             {showStartAppModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white w-full max-w-5xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -1224,20 +1285,48 @@ export default function DashboardPage() {
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900">
                                     {startAppStep === 1 ? 'Application Notes' :
-                                        startAppStep === 2 ? 'Select Category' :
-                                            startAppStep === 3 ? 'Select Sub-Category' :
-                                                'Select Scholarship Program'}
+                                        startAppStep === 2 ? 'Select Level of Study' :
+                                            startAppStep === 3 ? 'Select Funding Type' :
+                                                startAppStep === 4 ? 'Select Scholarship Benefits' :
+                                                    startAppStep === 5 ? 'Select Language of Instruction' :
+                                                        'Select Program'}
                                 </h3>
                                 <p className="text-sm text-slate-500">
-                                    Step {startAppStep} of 4
+                                    Step {startAppStep} of {selectedFunding === 'self_funded' ? 6 : 7}
                                 </p>
                             </div>
                             <button
-                                onClick={() => setShowStartAppModal(false)}
+                                onClick={() => {
+                                    setShowStartAppModal(false)
+                                    setStartAppStep(1)
+                                    setSelectedLevel('')
+                                    setChineseSubProgram('')
+                                    setSelectedFunding('')
+                                    setSelectedBenefits('')
+                                    setSelectedLanguage('')
+                                    setAgreedToTerms(false)
+                                }}
                                 className="p-2 hover:bg-slate-200 rounded-full transition text-slate-500"
                             >
                                 <X className="w-5 h-5" />
                             </button>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="px-6 pt-4">
+                            <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5, 6].map(step => {
+                                    const isActive = startAppStep >= step
+                                    const isCurrent = startAppStep === step
+                                    // Skip step 4 display if self-funded
+                                    if (step === 4 && selectedFunding === 'self_funded') return null
+                                    return (
+                                        <div key={step} className="flex-1">
+                                            <div className={`h-1.5 rounded-full transition-all ${isActive ? 'bg-sky-500' : 'bg-slate-200'} ${isCurrent ? 'bg-sky-600' : ''}`} />
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
 
                         {/* Content */}
@@ -1273,32 +1362,51 @@ export default function DashboardPage() {
                                 </div>
                             )}
 
-                            {/* STEP 2: Categories */}
+                            {/* STEP 2: Level of Study */}
                             {startAppStep === 2 && (
                                 <div className="space-y-6 max-w-2xl mx-auto">
-                                    <h4 className="font-bold text-slate-800 text-lg">Please select an enrollment category:</h4>
+                                    <h4 className="font-bold text-slate-800 text-lg">Select your level of study:</h4>
 
-                                    {categories.length === 0 ? (
-                                        <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <p className="text-slate-500 font-medium">Loading Categories...</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {categories.map((cat, idx) => (
-                                                <label key={idx} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedCategory === cat.name ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                    <div className="space-y-3">
+                                        {ENROLLMENT_CONFIG.levelsOfStudy.map((level) => (
+                                            <div key={level.id}>
+                                                <label className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedLevel === level.id ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                                                     <input
                                                         type="radio"
-                                                        name="category"
-                                                        value={cat.name}
-                                                        checked={selectedCategory === cat.name}
-                                                        onChange={() => handleCategorySelect(cat.name)}
+                                                        name="level"
+                                                        value={level.id}
+                                                        checked={selectedLevel === level.id}
+                                                        onChange={() => {
+                                                            setSelectedLevel(level.id)
+                                                            setChineseSubProgram('')
+                                                        }}
                                                         className="w-5 h-5 text-sky-600 focus:ring-sky-500 border-gray-300"
                                                     />
-                                                    <span className="font-medium text-slate-700">{cat.name}</span>
+                                                    <span className="font-medium text-slate-700">{level.name}</span>
                                                 </label>
-                                            ))}
-                                        </div>
-                                    )}
+
+                                                {/* Chinese Language Sub-Programs */}
+                                                {level.id === 'chinese_language' && selectedLevel === 'chinese_language' && (
+                                                    <div className="ml-8 mt-2 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Duration:</p>
+                                                        {level.subPrograms.map((sub) => (
+                                                            <label key={sub} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${chineseSubProgram === sub ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="chineseSub"
+                                                                    value={sub}
+                                                                    checked={chineseSubProgram === sub}
+                                                                    onChange={() => setChineseSubProgram(sub)}
+                                                                    className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300"
+                                                                />
+                                                                <span className="text-sm font-medium text-slate-700">{sub}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
 
                                     <div className="flex justify-between items-center pt-4">
                                         <button
@@ -1309,8 +1417,8 @@ export default function DashboardPage() {
                                         </button>
                                         <button
                                             onClick={() => setStartAppStep(3)}
-                                            disabled={!selectedCategory}
-                                            className={`px-6 py-2 rounded-lg font-bold ${selectedCategory ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                            disabled={!selectedLevel || (selectedLevel === 'chinese_language' && !chineseSubProgram)}
+                                            className={`px-6 py-2 rounded-lg font-bold ${(selectedLevel && (selectedLevel !== 'chinese_language' || chineseSubProgram)) ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                                         >
                                             Next
                                         </button>
@@ -1318,32 +1426,36 @@ export default function DashboardPage() {
                                 </div>
                             )}
 
-                            {/* STEP 3: Sub-Categories */}
+                            {/* STEP 3: Funding Type */}
                             {startAppStep === 3 && (
                                 <div className="space-y-6 max-w-2xl mx-auto">
-                                    <h4 className="font-bold text-slate-800 text-lg">Please select a sub-category:</h4>
+                                    <h4 className="font-bold text-slate-800 text-lg">How will you fund your studies?</h4>
 
-                                    {subCategories.length === 0 ? (
-                                        <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <p className="text-slate-500 font-medium">No sub-categories available for this selection.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {subCategories.map((sub, idx) => (
-                                                <label key={idx} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedSubCategory === sub ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                                                    <input
-                                                        type="radio"
-                                                        name="subCategory"
-                                                        value={sub}
-                                                        checked={selectedSubCategory === sub}
-                                                        onChange={() => setSelectedSubCategory(sub)}
-                                                        className="w-5 h-5 text-sky-600 focus:ring-sky-500 border-gray-300"
-                                                    />
-                                                    <span className="font-medium text-slate-700">{sub}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="space-y-3">
+                                        {ENROLLMENT_CONFIG.fundingTypes.map((funding) => (
+                                            <label key={funding.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedFunding === funding.id ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="funding"
+                                                    value={funding.id}
+                                                    checked={selectedFunding === funding.id}
+                                                    onChange={() => {
+                                                        setSelectedFunding(funding.id)
+                                                        if (funding.id === 'self_funded') {
+                                                            setSelectedBenefits('') // Clear benefits for self-funded
+                                                        }
+                                                    }}
+                                                    className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                                                />
+                                                <div>
+                                                    <span className="font-medium text-slate-700">{funding.name}</span>
+                                                    {funding.id === 'self_funded' && (
+                                                        <p className="text-xs text-slate-400 mt-0.5">Skip scholarship benefits selection</p>
+                                                    )}
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
 
                                     <div className="flex justify-between items-center pt-4">
                                         <button
@@ -1353,9 +1465,9 @@ export default function DashboardPage() {
                                             Back
                                         </button>
                                         <button
-                                            onClick={() => setStartAppStep(4)}
-                                            disabled={!selectedSubCategory}
-                                            className={`px-6 py-2 rounded-lg font-bold ${selectedSubCategory ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                            onClick={() => setStartAppStep(selectedFunding === 'self_funded' ? 5 : 4)}
+                                            disabled={!selectedFunding}
+                                            className={`px-6 py-2 rounded-lg font-bold ${selectedFunding ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                                         >
                                             Next
                                         </button>
@@ -1363,98 +1475,175 @@ export default function DashboardPage() {
                                 </div>
                             )}
 
-                            {/* STEP 4: Table View */}
+                            {/* STEP 4: Scholarship Benefits (Only for Scholarship funding) */}
                             {startAppStep === 4 && (
+                                <div className="space-y-6 max-w-2xl mx-auto">
+                                    <h4 className="font-bold text-slate-800 text-lg">Select your scholarship benefits:</h4>
+
+                                    <div className="space-y-3">
+                                        {ENROLLMENT_CONFIG.scholarshipBenefits.map((benefit) => (
+                                            <label key={benefit.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedBenefits === benefit.id ? 'border-amber-500 bg-amber-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="benefits"
+                                                    value={benefit.id}
+                                                    checked={selectedBenefits === benefit.id}
+                                                    onChange={() => setSelectedBenefits(benefit.id)}
+                                                    className="w-5 h-5 text-amber-600 focus:ring-amber-500 border-gray-300"
+                                                />
+                                                <span className="font-medium text-slate-700">{benefit.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-4">
+                                        <button
+                                            onClick={() => setStartAppStep(3)}
+                                            className="text-slate-500 hover:text-slate-700 font-medium"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={() => setStartAppStep(5)}
+                                            disabled={!selectedBenefits}
+                                            className={`px-6 py-2 rounded-lg font-bold ${selectedBenefits ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP 5: Language of Instruction */}
+                            {startAppStep === 5 && (
+                                <div className="space-y-6 max-w-2xl mx-auto">
+                                    <h4 className="font-bold text-slate-800 text-lg">Select language of instruction:</h4>
+
+                                    <div className="space-y-3">
+                                        {ENROLLMENT_CONFIG.languages.map((lang) => (
+                                            <label key={lang.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedLanguage === lang.id ? 'border-purple-500 bg-purple-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="language"
+                                                    value={lang.id}
+                                                    checked={selectedLanguage === lang.id}
+                                                    onChange={() => setSelectedLanguage(lang.id)}
+                                                    className="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                />
+                                                <span className="font-medium text-slate-700">{lang.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-4">
+                                        <button
+                                            onClick={() => setStartAppStep(selectedFunding === 'self_funded' ? 3 : 4)}
+                                            className="text-slate-500 hover:text-slate-700 font-medium"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={() => setStartAppStep(6)}
+                                            disabled={!selectedLanguage}
+                                            className={`px-6 py-2 rounded-lg font-bold ${selectedLanguage ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                        >
+                                            View Programs
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* STEP 6: Available Programs */}
+                            {startAppStep === 6 && (
                                 <div className="space-y-4">
+                                    {/* Selection Summary */}
+                                    <div className="bg-gradient-to-r from-sky-50 to-indigo-50 p-4 rounded-xl border border-sky-100 mb-4">
+                                        <p className="text-xs font-bold text-sky-700 uppercase tracking-wider mb-2">Your Selection</p>
+                                        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                                            <span className="px-3 py-1 bg-white rounded-lg border shadow-sm">
+                                                {ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === selectedLevel)?.name}
+                                                {chineseSubProgram && ` - ${chineseSubProgram}`}
+                                            </span>
+                                            <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-emerald-700">
+                                                {ENROLLMENT_CONFIG.fundingTypes.find(f => f.id === selectedFunding)?.name}
+                                            </span>
+                                            {selectedBenefits && (
+                                                <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-amber-700">
+                                                    {ENROLLMENT_CONFIG.scholarshipBenefits.find(b => b.id === selectedBenefits)?.name}
+                                                </span>
+                                            )}
+                                            <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-purple-700">
+                                                {ENROLLMENT_CONFIG.languages.find(l => l.id === selectedLanguage)?.name}
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <div className="flex justify-between items-center mb-4">
                                         <div>
-                                            <h4 className="font-bold text-slate-800">{selectedSubCategory}</h4>
+                                            <h4 className="font-bold text-slate-800">Available Programs</h4>
                                             <p className="text-sm text-slate-500">
-                                                {scholarshipLoading ? 'Searching...' : `Found ${availableScholarships.length} available programs`}
+                                                {selectedLevel === 'chinese_language'
+                                                    ? 'Chinese Language programs available'
+                                                    : `${(ENROLLMENT_CONFIG.programsByLevel[selectedLevel] || []).length} programs available`
+                                                }
                                             </p>
                                         </div>
                                         <button
-                                            onClick={() => setStartAppStep(3)}
+                                            onClick={() => setStartAppStep(5)}
                                             className="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1"
                                         >
                                             <ArrowLeft className="w-4 h-4" /> Back
                                         </button>
                                     </div>
 
-                                    {scholarshipLoading ? (
-                                        <div className="text-center py-12">
-                                            <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                            <p className="text-slate-500">Loading programs...</p>
-                                        </div>
-                                    ) : availableScholarships.length === 0 ? (
-                                        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                            <p className="text-slate-500">No programs available under this category at the moment.</p>
-                                            <p className="text-xs text-slate-400 mt-2">Try selecting a different category or check back later.</p>
+                                    {/* Programs List */}
+                                    {selectedLevel === 'chinese_language' ? (
+                                        <div className="bg-white p-6 rounded-xl border border-slate-200 text-center">
+                                            <GraduationCap className="w-12 h-12 text-sky-500 mx-auto mb-4" />
+                                            <h4 className="font-bold text-slate-800 text-lg mb-2">Chinese Language Program</h4>
+                                            <p className="text-slate-500 text-sm mb-4">
+                                                {chineseSubProgram} • {ENROLLMENT_CONFIG.fundingTypes.find(f => f.id === selectedFunding)?.name}
+                                            </p>
+                                            <button
+                                                onClick={() => handleAddApplication({
+                                                    title: `Chinese Language - ${chineseSubProgram}`,
+                                                    degree: 'Non-Degree',
+                                                    university: 'To Be Assigned',
+                                                    language: selectedLanguage === 'chinese' ? 'Chinese' : 'English',
+                                                    fundingType: selectedFunding,
+                                                    benefits: selectedBenefits
+                                                })}
+                                                disabled={creatingApp}
+                                                className={`px-6 py-3 rounded-xl font-bold text-white shadow-lg transition-all ${creatingApp ? 'bg-slate-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 hover:shadow-xl'}`}
+                                            >
+                                                {creatingApp ? 'Processing...' : 'Apply for This Program'}
+                                            </button>
                                         </div>
                                     ) : (
-                                        <>
-                                            <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm max-h-[60vh] overflow-y-auto">
-                                                <table className="w-full text-sm text-left relative">
-                                                    <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 sticky top-0 shadow-sm z-10">
-                                                        <tr>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">College</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">Degree</th>
-                                                            <th className="px-4 py-3 bg-slate-50">Program</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">Taught by</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">Tuition fee</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">Duration</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap bg-slate-50">Deadline</th>
-                                                            <th className="px-4 py-3 whitespace-nowrap text-center bg-slate-50">Operation</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100">
-                                                        {availableScholarships.map(scholarship => {
-                                                            const getIsExpired = (deadline) => {
-                                                                if (!deadline) return false;
-                                                                const d = new Date(deadline);
-                                                                d.setHours(23, 59, 59, 999);
-                                                                return d < new Date();
-                                                            };
-                                                            const isDeadlinePassed = getIsExpired(scholarship.deadline);
-
-                                                            return (
-                                                                <tr key={scholarship._id || scholarship.id} className="hover:bg-slate-50 transition">
-                                                                    <td className="px-4 py-3 font-medium text-slate-900">{scholarship.university}</td>
-                                                                    <td className="px-4 py-3 text-slate-600">{scholarship.degree || 'N/A'}</td>
-                                                                    <td className="px-4 py-3 text-sky-700 font-medium max-w-xs">{scholarship.title}</td>
-                                                                    <td className="px-4 py-3 text-slate-600">{scholarship.language || 'English'}</td>
-                                                                    <td className="px-4 py-3 text-slate-600">{scholarship.tuition || 'Free'}</td>
-                                                                    <td className="px-4 py-3 text-slate-600">{scholarship.duration || 'N/A'}</td>
-                                                                    <td className="px-4 py-3 text-slate-600">{scholarship.deadline || 'N/A'}</td>
-                                                                    <td className="px-4 py-3 text-center">
-                                                                        {isDeadlinePassed ? (
-                                                                            <span className="text-slate-400 font-bold cursor-not-allowed">Closed</span>
-                                                                        ) : (
-                                                                            <button
-                                                                                onClick={() => handleAddApplication(scholarship)}
-                                                                                disabled={creatingApp}
-                                                                                className={`text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all transform ${creatingApp ? 'bg-slate-400 cursor-not-allowed' : 'bg-sky-600 hover:bg-sky-700 hover:scale-105'
-                                                                                    }`}
-                                                                            >
-                                                                                {creatingApp ? 'Processing...' : 'Apply'}
-                                                                            </button>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            )
+                                        <div className="grid gap-3 max-h-[50vh] overflow-y-auto">
+                                            {(ENROLLMENT_CONFIG.programsByLevel[selectedLevel] || []).map((program, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-300 hover:shadow-sm transition">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-2 h-2 rounded-full bg-sky-500" />
+                                                        <span className="font-medium text-slate-800">{program}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleAddApplication({
+                                                            title: program,
+                                                            degree: ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === selectedLevel)?.name,
+                                                            university: 'To Be Assigned',
+                                                            language: selectedLanguage === 'chinese' ? 'Chinese' : 'English',
+                                                            fundingType: selectedFunding,
+                                                            benefits: selectedBenefits
                                                         })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div className="flex justify-start pt-2">
-                                                <button
-                                                    onClick={() => setStartAppStep(3)}
-                                                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm"
-                                                >
-                                                    Back to Sub-Categories
-                                                </button>
-                                            </div>
-                                        </>
+                                                        disabled={creatingApp}
+                                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${creatingApp ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
+                                                    >
+                                                        {creatingApp ? '...' : 'Apply'}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             )}

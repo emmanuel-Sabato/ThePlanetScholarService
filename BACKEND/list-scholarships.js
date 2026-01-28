@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { MongoClient } = require('mongodb');
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -22,6 +23,10 @@ async function listScholarships() {
             console.log(`   MongoDB _id: ${scholarship._id}`);
             console.log(`   Country: ${scholarship.country}`);
             console.log(`   Degree: ${scholarship.degree}`);
+            console.log(`   Study Level: ${scholarship.studyLevel}`);
+            console.log(`   Funding Type: ${scholarship.fundingType}`);
+            console.log(`   HSK Req: ${scholarship.hskRequirement}`);
+            console.log(`   IELTS Req: ${scholarship.ieltsRequirement}`);
             console.log(`   Deadline: ${scholarship.deadline}`);
             if (scholarship.createdAt) {
                 console.log(`   Created: ${new Date(scholarship.createdAt).toLocaleString()}`);
@@ -37,3 +42,9 @@ async function listScholarships() {
 }
 
 listScholarships();
+
+
+
+
+
+

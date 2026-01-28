@@ -1,275 +1,376 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, X, Save, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, ChevronRight, ChevronDown, GraduationCap, DollarSign, Gift, Languages, BookOpen, Layers } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3000/api'
         : '/api');
 
-export default function AdminEnrollmentCategories() {
-    const [categories, setCategories] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [editMode, setEditMode] = useState(null)
-    const [submitting, setSubmitting] = useState(false)
-
-    // Form State
-    const [formData, setFormData] = useState({
-        name: '',
-        subCategories: [] // Array of strings
-    })
-    const [newSubCategory, setNewSubCategory] = useState('')
-
-    useEffect(() => {
-        fetchCategories()
-    }, [])
-
-    async function fetchCategories() {
-        setLoading(true)
-        try {
-            const res = await fetch(`${API_URL}/enrollment-categories`)
-            const data = await res.json()
-            setCategories(data)
-        } catch (error) {
-            console.error('Failed to fetch categories', error)
-        }
-        setLoading(false)
-    }
-
-    function handleEdit(category) {
-        setFormData({
-            name: category.name,
-            subCategories: category.subCategories || []
-        })
-        setEditMode(category._id)
-        setIsModalOpen(true)
-    }
-
-    function handleAddSubCategory() {
-        if (!newSubCategory.trim()) return
-        setFormData({
-            ...formData,
-            subCategories: [...formData.subCategories, newSubCategory.trim()]
-        })
-        setNewSubCategory('')
-    }
-
-    function handleRemoveSubCategory(index) {
-        const newSubs = [...formData.subCategories]
-        newSubs.splice(index, 1)
-        setFormData({ ...formData, subCategories: newSubs })
-    }
-
-    async function handleSubmit(e) {
-        e.preventDefault()
-        setSubmitting(true)
-        try {
-            const url = editMode
-                ? `${API_URL}/enrollment-categories/${editMode}`
-                : `${API_URL}/enrollment-categories`
-
-            const method = editMode ? 'PUT' : 'POST'
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            })
-
-            if (res.ok) {
-                await fetchCategories()
-                setIsModalOpen(false)
-                resetForm()
-            } else {
-                alert('Failed to save category')
+// Predefined configuration for the enrollment flow
+const ENROLLMENT_CONFIG = {
+    levelsOfStudy: [
+        {
+            id: 'chinese_language',
+            name: 'Chinese Language',
+            hasFundingOptions: true,
+            subPrograms: {
+                'Self-Funded': ['One Year Program', 'One Semester Program'],
+                'Scholarship': ['One Year Program', 'One Semester Program']
             }
-        } catch (error) {
-            console.error('Error saving category', error)
-        }
-        setSubmitting(false)
+        },
+        { id: 'advanced_diploma', name: 'Advanced Diploma', hasFundingOptions: true },
+        { id: 'bachelor', name: 'Bachelor Degree', hasFundingOptions: true },
+        { id: 'masters', name: "Master's Degree", hasFundingOptions: true },
+        { id: 'phd', name: 'PhD', hasFundingOptions: true }
+    ],
+    fundingTypes: [
+        { id: 'scholarship', name: 'Scholarship' },
+        { id: 'self_funded', name: 'Self-Funded' }
+    ],
+    scholarshipBenefits: [
+        { id: 'full', name: 'Free tuition + Free hostel + Monthly stipend' },
+        { id: 'tuition_hostel', name: 'Free tuition + Free hostel' },
+        { id: 'tuition_only', name: 'Free tuition only' },
+        { id: 'half_tuition', name: 'Half tuition' }
+    ],
+    languages: [
+        { id: 'chinese', name: 'Chinese-taught' },
+        { id: 'english', name: 'English-taught' }
+    ],
+    programsByLevel: {
+        advanced_diploma: [
+            'Big Data Technology',
+            'Computer Science',
+            'Software Engineering',
+            'Nursing',
+            'Tourism Management',
+            'International Economics & Trade',
+            'Animal Husbandry',
+            'Crop Production',
+            'Agricultural Mechanization'
+        ],
+        bachelor: [
+            'Computer Science',
+            'Software Engineering',
+            'Artificial Intelligence',
+            'Engineering (Civil, Mechanical, Electrical, Chemical)',
+            'Medicine / Nursing / Pharmacy',
+            'Business Administration',
+            'Architecture & Urban Planning',
+            'Logistics & Supply Chain',
+            'Environmental & Agricultural Sciences',
+            'Mathematics, Physics, English, Geology, Ecology'
+        ],
+        masters: [
+            'Computer Science & AI',
+            'Engineering Programs',
+            'Medicine & Pharmacy',
+            'Business Administration',
+            'Biotechnology',
+            'Environmental & Material Sciences',
+            'Architecture & Urban/Rural Development'
+        ],
+        phd: [
+            'Software Engineering',
+            'Artificial Intelligence',
+            'Engineering Fields',
+            'Medicine & Pharmacy',
+            'Agricultural Sciences',
+            'Environmental, Geological & Material Sciences'
+        ]
+    }
+};
+
+export default function AdminEnrollmentCategories() {
+    const [expandedSection, setExpandedSection] = useState('levels')
+    const [programs, setPrograms] = useState(ENROLLMENT_CONFIG.programsByLevel)
+    const [isEditingPrograms, setIsEditingPrograms] = useState(false)
+    const [editingLevel, setEditingLevel] = useState(null)
+    const [newProgram, setNewProgram] = useState('')
+
+    const toggleSection = (section) => {
+        setExpandedSection(expandedSection === section ? null : section)
     }
 
-    async function handleDelete(id) {
-        if (!confirm('Are you sure? This will delete the category and all its sub-items.')) return
+    const handleAddProgram = (levelId) => {
+        if (!newProgram.trim()) return
+        setPrograms(prev => ({
+            ...prev,
+            [levelId]: [...(prev[levelId] || []), newProgram.trim()]
+        }))
+        setNewProgram('')
+    }
+
+    const handleRemoveProgram = (levelId, index) => {
+        setPrograms(prev => ({
+            ...prev,
+            [levelId]: prev[levelId].filter((_, i) => i !== index)
+        }))
+    }
+
+    const handleSavePrograms = async () => {
         try {
-            await fetch(`${API_URL}/enrollment-categories/${id}`, { method: 'DELETE' })
-            fetchCategories()
+            await fetch(`${API_URL}/enrollment-config/programs`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ programs })
+            })
+            setIsEditingPrograms(false)
+            setEditingLevel(null)
         } catch (error) {
-            console.error('Error deleting category', error)
+            console.error('Failed to save programs', error)
         }
-    }
-
-    function resetForm() {
-        setFormData({ name: '', subCategories: [] })
-        setEditMode(null)
-        setNewSubCategory('')
     }
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="card-surface p-6">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-2">
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Enrollment Categories</h2>
-                        <p className="text-sm text-slate-500">Manage admission categories and sub-programs</p>
+                        <p className="text-sm text-slate-500">Manage the enrollment flow structure and available programs</p>
                     </div>
-                    <button
-                        onClick={() => { resetForm(); setIsModalOpen(true) }}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Add Category
-                    </button>
                 </div>
 
-                {loading ? (
-                    <p className="text-center py-8 text-slate-500">Loading categories...</p>
-                ) : (
-                    <div className="space-y-4">
-                        {categories.map((cat) => (
-                            <CategoryItem
-                                key={cat._id}
-                                category={cat}
-                                onEdit={() => handleEdit(cat)}
-                                onDelete={() => handleDelete(cat._id)}
-                            />
+                {/* Flow Diagram */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-sky-50 to-indigo-50 rounded-xl border border-sky-100">
+                    <p className="text-xs font-bold text-sky-700 uppercase tracking-wider mb-3">Application Flow</p>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                        <span className="px-3 py-1.5 bg-white rounded-lg shadow-sm border">Step 1: Level</span>
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <span className="px-3 py-1.5 bg-white rounded-lg shadow-sm border">Step 2: Funding</span>
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <span className="px-3 py-1.5 bg-white rounded-lg shadow-sm border text-amber-600">(Step 3: Benefits)</span>
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <span className="px-3 py-1.5 bg-white rounded-lg shadow-sm border">Step 4: Language</span>
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <span className="px-3 py-1.5 bg-white rounded-lg shadow-sm border">Step 5: Programs</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-2 italic">* Step 3 only appears if "Scholarship" is selected in Step 2</p>
+                </div>
+            </div>
+
+            {/* Section 1: Levels of Study */}
+            <div className="card-surface overflow-hidden">
+                <button
+                    onClick={() => toggleSection('levels')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${expandedSection === 'levels' ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <GraduationCap className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-slate-800">Step 1: Levels of Study</h3>
+                            <p className="text-xs text-slate-500">{ENROLLMENT_CONFIG.levelsOfStudy.length} levels configured</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'levels' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expandedSection === 'levels' && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                        {ENROLLMENT_CONFIG.levelsOfStudy.map((level) => (
+                            <div key={level.id} className="bg-white p-4 rounded-xl border border-slate-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-sky-500" />
+                                        <span className="font-semibold text-slate-800">{level.name}</span>
+                                    </div>
+                                    {level.id === 'chinese_language' && (
+                                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full uppercase">Has Sub-programs</span>
+                                    )}
+                                </div>
+                                {level.subPrograms && (
+                                    <div className="mt-3 pl-5 space-y-2">
+                                        {Object.entries(level.subPrograms).map(([funding, subs]) => (
+                                            <div key={funding} className="text-sm">
+                                                <span className="text-slate-500 font-medium">{funding}:</span>
+                                                <div className="flex flex-wrap gap-2 mt-1">
+                                                    {subs.map(sub => (
+                                                        <span key={sub} className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">{sub}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                            <h3 className="text-xl font-bold text-slate-900">{editMode ? 'Edit Category' : 'Add New Category'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition text-slate-500">
-                                <X className="w-5 h-5" />
-                            </button>
+            {/* Section 2: Funding Types */}
+            <div className="card-surface overflow-hidden">
+                <button
+                    onClick={() => toggleSection('funding')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${expandedSection === 'funding' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <DollarSign className="w-5 h-5" />
                         </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-slate-800">Step 2: Funding Types</h3>
+                            <p className="text-xs text-slate-500">How students fund their studies</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'funding' ? 'rotate-180' : ''}`} />
+                </button>
 
-                        <div className="p-6 overflow-y-auto">
-                            <form id="categoryForm" onSubmit={handleSubmit} className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Category Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
-                                        placeholder="e.g. Exchange Programme"
-                                    />
-                                </div>
+                {expandedSection === 'funding' && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                        {ENROLLMENT_CONFIG.fundingTypes.map((type) => (
+                            <div key={type.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span className="font-semibold text-slate-800">{type.name}</span>
+                                {type.id === 'self_funded' && (
+                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Skips Benefits Step</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Sub-Categories / Programs</label>
-                                    <div className="flex gap-2 mb-3">
-                                        <input
-                                            type="text"
-                                            value={newSubCategory}
-                                            onChange={(e) => setNewSubCategory(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubCategory())}
-                                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none"
-                                            placeholder="Type sub-category and press Enter or Add"
-                                        />
+            {/* Section 3: Scholarship Benefits */}
+            <div className="card-surface overflow-hidden">
+                <button
+                    onClick={() => toggleSection('benefits')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${expandedSection === 'benefits' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <Gift className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-slate-800">Step 3: Scholarship Benefits</h3>
+                            <p className="text-xs text-slate-500">Only shown for Scholarship funding type</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'benefits' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expandedSection === 'benefits' && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                        {ENROLLMENT_CONFIG.scholarshipBenefits.map((benefit) => (
+                            <div key={benefit.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                <span className="font-semibold text-slate-800">{benefit.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Section 4: Language of Instruction */}
+            <div className="card-surface overflow-hidden">
+                <button
+                    onClick={() => toggleSection('language')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${expandedSection === 'language' ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <Languages className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-slate-800">Step 4: Language of Instruction</h3>
+                            <p className="text-xs text-slate-500">Teaching language options</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'language' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expandedSection === 'language' && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+                        {ENROLLMENT_CONFIG.languages.map((lang) => (
+                            <div key={lang.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                                <span className="font-semibold text-slate-800">{lang.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Section 5: Programs by Level */}
+            <div className="card-surface overflow-hidden">
+                <button
+                    onClick={() => toggleSection('programs')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${expandedSection === 'programs' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-bold text-slate-800">Step 5: Available Programs</h3>
+                            <p className="text-xs text-slate-500">Programs displayed based on Level selection</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'programs' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expandedSection === 'programs' && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-4">
+                        {Object.entries(programs).map(([levelId, programList]) => {
+                            const levelName = ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === levelId)?.name || levelId
+                            const isEditing = editingLevel === levelId
+
+                            return (
+                                <div key={levelId} className="bg-white p-4 rounded-xl border border-slate-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-slate-800">{levelName}</h4>
                                         <button
-                                            type="button"
-                                            onClick={handleAddSubCategory}
-                                            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition"
+                                            onClick={() => setEditingLevel(isEditing ? null : levelId)}
+                                            className={`text-xs font-bold px-3 py-1 rounded-lg transition ${isEditing ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                         >
-                                            Add
+                                            {isEditing ? 'Done' : 'Edit'}
                                         </button>
                                     </div>
 
-                                    <div className="space-y-2 max-h-60 overflow-y-auto p-1">
-                                        {formData.subCategories.length === 0 && (
-                                            <p className="text-sm text-slate-400 italic">No sub-categories added yet.</p>
-                                        )}
-                                        {formData.subCategories.map((sub, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100 group">
-                                                <span className="text-sm text-slate-700">{sub}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveSubCategory(idx)}
-                                                    className="text-slate-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
+                                    <div className="flex flex-wrap gap-2">
+                                        {programList.map((program, idx) => (
+                                            <div key={idx} className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 ${isEditing ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-indigo-50 text-indigo-700'}`}>
+                                                <span>{program}</span>
+                                                {isEditing && (
+                                                    <button
+                                                        onClick={() => handleRemoveProgram(levelId, idx)}
+                                                        className="hover:text-rose-900"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
+
+                                    {isEditing && (
+                                        <div className="mt-3 flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newProgram}
+                                                onChange={(e) => setNewProgram(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddProgram(levelId))}
+                                                placeholder="Add new program..."
+                                                className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            />
+                                            <button
+                                                onClick={() => handleAddProgram(levelId)}
+                                                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </form>
-                        </div>
-
-                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-5 py-2.5 rounded-lg border border-slate-300 font-semibold text-slate-600 hover:bg-white transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                form="categoryForm"
-                                type="submit"
-                                disabled={submitting}
-                                className="px-5 py-2.5 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 flex items-center gap-2"
-                            >
-                                {submitting ? 'Saving...' : 'Save Category'}
-                            </button>
-                        </div>
+                            )
+                        })}
                     </div>
-                </div>
-            )}
-        </div>
-    )
-}
-
-function CategoryItem({ category, onEdit, onDelete }) {
-    const [expanded, setExpanded] = useState(false)
-
-    return (
-        <div className="border border-slate-200 rounded-xl overflow-hidden bg-white transition-all hover:shadow-sm">
-            <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50"
-                onClick={() => setExpanded(!expanded)}
-            >
-                <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-lg transition-transform duration-200 ${expanded ? 'bg-sky-100 text-sky-600 rotate-90' : 'bg-slate-100 text-slate-500'}`}>
-                        <ChevronRight className="w-4 h-4" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800">{category.name}</h3>
-                        <p className="text-xs text-slate-500">{category.subCategories?.length || 0} sub-categories</p>
-                    </div>
-                </div>
-                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                    <button onClick={onEdit} className="p-2 hover:bg-sky-50 text-slate-400 hover:text-sky-600 rounded-lg transition">
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={onDelete} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition">
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                )}
             </div>
-
-            {expanded && (
-                <div className="bg-slate-50/50 p-4 border-t border-slate-100">
-                    <ul className="space-y-2 pl-11">
-                        {category.subCategories?.map((sub, i) => (
-                            <li key={i} className="text-sm text-slate-600 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                {typeof sub === 'string' ? sub : sub.name}
-                            </li>
-                        ))}
-                        {(!category.subCategories || category.subCategories.length === 0) && (
-                            <li className="text-sm text-slate-400 italic">No sub-categories</li>
-                        )}
-                    </ul>
-                </div>
-            )}
         </div>
     )
 }

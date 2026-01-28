@@ -23,6 +23,70 @@ export default function ApplicationFormPage() {
     const [showDocPreviewModal, setShowDocPreviewModal] = useState(false)
     const [previewDocUrl, setPreviewDocUrl] = useState('')
 
+    // Selection Wizard State
+    const [showWizard, setShowWizard] = useState(false)
+    const [wizardStep, setWizardStep] = useState(1)
+    const [wizardSelections, setWizardSelections] = useState({
+        studyLevel: '',
+        fundingType: '',
+        benefits: '',
+        teachingLanguage: '',
+        proficiency: '',
+        hskLevel: '',
+        ieltsScore: ''
+    })
+    const [matchedPrograms, setMatchedPrograms] = useState([])
+    const [wizardLoading, setWizardLoading] = useState(false)
+
+    async function fetchWizardPrograms() {
+        setWizardLoading(true)
+        try {
+            const res = await fetch(`${API_URL}/scholarships`)
+            const data = await res.json()
+
+            // Apply filtering logic based on wizardSelections
+            const filtered = data.filter(s => {
+                // Step 1: Study Level
+                if (wizardSelections.studyLevel && s.studyLevel !== wizardSelections.studyLevel) return false
+
+                // Step 2: Funding Type
+                if (wizardSelections.fundingType && s.fundingType !== wizardSelections.fundingType) return false
+
+                // Step 3: Benefits (Only if Scholarship)
+                if (wizardSelections.fundingType === 'Scholarship' && wizardSelections.benefits) {
+                    const b = s.benefitsDetails || {}
+                    if (wizardSelections.benefits === 'Free tuition + Free hostel + Monthly stipend') {
+                        if (!b.tuition || !b.accommodation || b.stipend <= 0) return false
+                    } else if (wizardSelections.benefits === 'Free tuition + Free hostel') {
+                        if (!b.tuition || !b.accommodation) return false
+                    } else if (wizardSelections.benefits === 'Free tuition only') {
+                        if (!b.tuition) return false
+                    } else if (wizardSelections.benefits === 'Half tuition') {
+                        // For now we don't have this in metadata but we could look for it in title/description
+                        if (!s.title.toLowerCase().includes('half')) return false
+                    }
+                }
+
+                // Step 4: Teaching Language
+                if (wizardSelections.teachingLanguage && s.language !== wizardSelections.teachingLanguage) return false
+
+                // Step 5 & 6: Language Requirements
+                if (wizardSelections.hskLevel && s.hskRequirement && s.hskRequirement !== 'None') {
+                    // Simple equality for now, could be improved to "at least"
+                    if (s.hskRequirement !== wizardSelections.hskLevel) return false
+                }
+
+                return true
+            })
+
+            setMatchedPrograms(filtered)
+        } catch (error) {
+            console.error('Failed to fetch wizard programs', error)
+            showToast('Failed to load programs. Please try again.', 'error')
+        }
+        setWizardLoading(false)
+    }
+
     const [activeMainTab, setActiveMainTab] = useState(1)
 
     const MAIN_TABS = [
@@ -3073,7 +3137,14 @@ export default function ApplicationFormPage() {
                                         </div>
 
                                         {/* Change Course Button */}
-                                        <button type="button" className="w-full py-3 bg-white border border-slate-200 text-sky-500 font-bold rounded-xl hover:bg-sky-50 hover:border-sky-200 transition-all uppercase tracking-widest text-sm shadow-sm flex items-center justify-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowWizard(true);
+                                                setWizardStep(1);
+                                            }}
+                                            className="w-full py-3 bg-white border border-slate-200 text-sky-500 font-bold rounded-xl hover:bg-sky-50 hover:border-sky-200 transition-all uppercase tracking-widest text-sm shadow-sm flex items-center justify-center gap-2"
+                                        >
                                             <Edit3 className="w-4 h-4" />
                                             修改学习专业 Change Course
                                         </button>
@@ -6345,6 +6416,340 @@ export default function ApplicationFormPage() {
                                 >
                                     Open Original File
                                 </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showWizard && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
+                    <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                                    课程选择向导 <span className="text-sky-500">Program Selection Wizard</span>
+                                </h3>
+                                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                                    Step {wizardStep} of 7 &bull; {
+                                        wizardStep === 1 ? 'Study Level' :
+                                            wizardStep === 2 ? 'Funding Type' :
+                                                wizardStep === 3 ? 'Scholarship Benefits' :
+                                                    wizardStep === 4 ? 'Teaching Language' :
+                                                        wizardStep === 5 ? 'Language Proficiency' :
+                                                            wizardStep === 6 ? 'Requirements' : 'Available Programs'
+                                    }
+                                </p>
+                            </div>
+                            <button onClick={() => setShowWizard(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
+                            {/* Progress Bar */}
+                            <div className="flex gap-2 mb-10">
+                                {[1, 2, 3, 4, 5, 6, 7].map(step => (
+                                    <div
+                                        key={step}
+                                        className={`h-2 flex-1 rounded-full transition-all duration-500 ${step <= wizardStep ? 'bg-sky-500 shadow-sm shadow-sky-200' : 'bg-slate-200'}`}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Step Content */}
+                            {wizardStep === 1 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">选择您的学习层次</h4>
+                                        <p className="text-slate-500">Select your level of study</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {['Chinese Language', 'Advanced Diploma', 'Bachelor Degree', 'Master’s Degree', 'PhD'].map(level => (
+                                            <button
+                                                key={level}
+                                                onClick={() => {
+                                                    setWizardSelections({ ...wizardSelections, studyLevel: level });
+                                                    setWizardStep(2);
+                                                }}
+                                                className={`p-6 rounded-3xl border-2 transition-all text-left group ${wizardSelections.studyLevel === level ? 'border-sky-500 bg-sky-50/50' : 'border-slate-100 bg-white hover:border-sky-200 hover:shadow-xl hover:shadow-sky-500/5'}`}
+                                            >
+                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all ${wizardSelections.studyLevel === level ? 'bg-sky-500 text-white shadow-lg shadow-sky-200' : 'bg-slate-100 text-slate-400 group-hover:bg-sky-100 group-hover:text-sky-500'}`}>
+                                                    <Diamond size={24} />
+                                                </div>
+                                                <span className="font-bold text-slate-900 block">{level}</span>
+                                                <span className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Select Level</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 2: Funding Type */}
+                            {wizardStep === 2 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">选择您的经费来源</h4>
+                                        <p className="text-slate-500">Select your funding type</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                                        {['Scholarship', 'Self-Funded'].map(type => (
+                                            <button
+                                                key={type}
+                                                onClick={() => {
+                                                    setWizardSelections({ ...wizardSelections, fundingType: type });
+                                                    if (type === 'Self-Funded') {
+                                                        setWizardStep(4); // Skip benefits for self-funded
+                                                    } else {
+                                                        setWizardStep(3);
+                                                    }
+                                                }}
+                                                className={`p-8 rounded-3xl border-2 transition-all text-center group ${wizardSelections.fundingType === type ? 'border-sky-500 bg-sky-50/50 shadow-xl shadow-sky-500/10' : 'border-slate-100 bg-white hover:border-sky-200 hover:shadow-2xl hover:shadow-sky-500/10'}`}
+                                            >
+                                                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 transition-all ${wizardSelections.fundingType === type ? 'bg-sky-500 text-white shadow-xl shadow-sky-200' : 'bg-slate-100 text-slate-400 group-hover:bg-sky-100 group-hover:text-sky-500'}`}>
+                                                    {type === 'Scholarship' ? <Diamond size={40} /> : <CreditCard size={40} />}
+                                                </div>
+                                                <span className="text-xl font-bold text-slate-900 block">{type === 'Scholarship' ? '奖学金 Scholarship' : '自费项目 Self-Funded'}</span>
+                                                <p className="text-sm text-slate-500 mt-2">
+                                                    {type === 'Scholarship' ? 'Apply for financial aid and grants' : 'Pay tuition and living costs yourself'}
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 3: Scholarship Benefits */}
+                            {wizardStep === 3 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">选择奖学金类型</h4>
+                                        <p className="text-slate-500">Select scholarship benefits</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                                        {[
+                                            'Free tuition + Free hostel + Monthly stipend',
+                                            'Free tuition + Free hostel',
+                                            'Free tuition only',
+                                            'Half tuition'
+                                        ].map(benefit => (
+                                            <button
+                                                key={benefit}
+                                                onClick={() => {
+                                                    setWizardSelections({ ...wizardSelections, benefits: benefit });
+                                                    setWizardStep(4);
+                                                }}
+                                                className={`p-6 rounded-3xl border-2 transition-all text-left flex items-start gap-4 ${wizardSelections.benefits === benefit ? 'border-sky-500 bg-sky-50/50 shadow-lg shadow-sky-500/5' : 'border-slate-100 bg-white hover:border-sky-200 hover:shadow-xl'}`}
+                                            >
+                                                <div className={`mt-1 p-2 rounded-xl ${wizardSelections.benefits === benefit ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <Check size={20} />
+                                                </div>
+                                                <div>
+                                                    <span className="font-bold text-slate-800 text-lg block">{benefit}</span>
+                                                    <span className="text-xs font-bold text-sky-500 uppercase tracking-widest">Select Benefit Tier</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 4: Teaching Language */}
+                            {wizardStep === 4 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">授课语言</h4>
+                                        <p className="text-slate-500">Teaching Language</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                                        {['English', 'Chinese'].map(lang => (
+                                            <button
+                                                key={lang}
+                                                onClick={() => {
+                                                    setWizardSelections({ ...wizardSelections, teachingLanguage: lang });
+                                                    setWizardStep(5);
+                                                }}
+                                                className={`p-8 rounded-3xl border-2 transition-all text-center group ${wizardSelections.teachingLanguage === lang ? 'border-sky-500 bg-sky-50/50 shadow-xl' : 'border-slate-100 bg-white hover:border-sky-200'}`}
+                                            >
+                                                <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 transition-all ${wizardSelections.teachingLanguage === lang ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <Languages size={40} />
+                                                </div>
+                                                <span className="text-xl font-bold text-slate-900 block">{lang}</span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Available Options</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 5: Language Proficiency */}
+                            {wizardStep === 5 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">语言能力</h4>
+                                        <p className="text-slate-500">Language Proficiency</p>
+                                    </div>
+                                    <div className="max-w-xl mx-auto space-y-4">
+                                        {['Fluent', 'Good', 'Adequate', 'Poor', 'None'].map(level => (
+                                            <button
+                                                key={level}
+                                                onClick={() => {
+                                                    setWizardSelections({ ...wizardSelections, proficiency: level });
+                                                    setWizardStep(6);
+                                                }}
+                                                className={`w-full p-5 rounded-2xl border-2 transition-all text-left flex items-center justify-between ${wizardSelections.proficiency === level ? 'border-sky-500 bg-sky-50/50' : 'border-slate-100 bg-white hover:border-sky-100'}`}
+                                            >
+                                                <span className="font-bold text-slate-800">{level}</span>
+                                                <ChevronLeft size={20} className="rotate-180 text-slate-300" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 6: Requirements */}
+                            {wizardStep === 6 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">语言要求</h4>
+                                        <p className="text-slate-500">Language Requirements (HSK/IELTS)</p>
+                                    </div>
+                                    <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* HSK Section */}
+                                        <div className="space-y-4">
+                                            <label className="text-xs font-bold text-sky-600 uppercase tracking-widest block text-center">Chinese (HSK)</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['None', 'HSK 4', 'HSK 5', 'HSK 6'].map(hsk => (
+                                                    <button
+                                                        key={hsk}
+                                                        onClick={() => setWizardSelections({ ...wizardSelections, hskLevel: hsk })}
+                                                        className={`p-3 rounded-xl border text-sm font-bold transition-all ${wizardSelections.hskLevel === hsk ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300'}`}
+                                                    >
+                                                        {hsk}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* IELTS Section */}
+                                        <div className="space-y-4">
+                                            <label className="text-xs font-bold text-sky-600 uppercase tracking-widest block text-center">English (IELTS)</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['None', '6.0+', '6.5+', '7.0+'].map(score => (
+                                                    <button
+                                                        key={score}
+                                                        onClick={() => setWizardSelections({ ...wizardSelections, ieltsScore: score })}
+                                                        className={`p-3 rounded-xl border text-sm font-bold transition-all ${wizardSelections.ieltsScore === score ? 'border-sky-500 bg-sky-500 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300'}`}
+                                                    >
+                                                        {score}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center mt-12">
+                                        <button
+                                            onClick={() => {
+                                                setWizardStep(7);
+                                                fetchWizardPrograms();
+                                            }}
+                                            className="px-12 py-4 bg-sky-600 text-white rounded-2xl font-black shadow-xl shadow-sky-100 hover:bg-sky-700 transition-all uppercase tracking-widest flex items-center gap-3 active:scale-95"
+                                        >
+                                            搜索课程 Search Programs <ChevronLeft size={20} className="rotate-180" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 7: Available Programs */}
+                            {wizardStep === 7 && (
+                                <div className="space-y-6">
+                                    <div className="text-center mb-8">
+                                        <h4 className="text-2xl font-bold text-slate-800">匹配的课程</h4>
+                                        <p className="text-slate-500">Matching Programs Found: {matchedPrograms.length}</p>
+                                    </div>
+
+                                    {wizardLoading ? (
+                                        <div className="py-20 flex flex-col items-center justify-center space-y-4">
+                                            <Loader2 className="w-12 h-12 text-sky-500 animate-spin" />
+                                            <p className="font-bold text-slate-400 uppercase tracking-widest animate-pulse">Filtering Programs...</p>
+                                        </div>
+                                    ) : matchedPrograms.length === 0 ? (
+                                        <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                                            <AlertTriangle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+                                            <h5 className="text-xl font-bold text-slate-800 mb-2">没有找到匹配的课程 No Programs Found</h5>
+                                            <p className="text-slate-500 max-w-md mx-auto mb-8">Try adjusting your filters to see more results.</p>
+                                            <button onClick={() => setWizardStep(1)} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold">Restart Selection</button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {matchedPrograms.map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            majorCourse: p.title,
+                                                            majorEnrollmentCategory: p.category,
+                                                            majorCollege: p.university,
+                                                            majorDegree: p.degree,
+                                                            majorTeachingLanguage: p.language,
+                                                            majorStudyDuration: p.duration || '1 Year'
+                                                        }));
+                                                        setShowWizard(false);
+                                                        showToast('Program updated successfully!', 'success');
+                                                    }}
+                                                    className="p-6 bg-white border border-slate-200 rounded-3xl text-left hover:border-emerald-500 group transition-all hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col h-full relative"
+                                                >
+                                                    <div className="absolute top-4 right-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-all transform scale-50 group-hover:scale-100">
+                                                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                                                            <Check size={20} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                                                            <FileText size={24} />
+                                                        </div>
+                                                        <div>
+                                                            <h6 className="font-black text-slate-900 line-clamp-1">{p.university}</h6>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                                <MapPin size={10} /> {p.location}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <h5 className="font-bold text-slate-800 mb-4 line-clamp-2 leading-tight">{p.title}</h5>
+                                                    <div className="mt-auto flex flex-wrap gap-2">
+                                                        <span className="px-3 py-1 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{p.degree}</span>
+                                                        <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{p.fundingType}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Footer with Back Button */}
+                            <div className="p-6 border-t border-slate-100 bg-white flex justify-between items-center">
+                                {wizardStep > 1 && wizardStep < 7 && (
+                                    <button
+                                        onClick={() => setWizardStep(prev => prev - 1)}
+                                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-all"
+                                    >
+                                        <ChevronLeft size={20} /> 上一步 Back
+                                    </button>
+                                )}
+                                {wizardStep === 7 && (
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-auto">
+                                        Please select a program above to continue
+                                    </p>
+                                )}
+                                <div className="flex gap-4 ml-auto">
+                                    <button onClick={() => setShowWizard(false)} className="px-6 py-3 bg-rose-50 text-rose-600 rounded-2xl font-bold hover:bg-rose-100 transition-all">Cancel</button>
+                                </div>
                             </div>
                         </div>
                     </div>
