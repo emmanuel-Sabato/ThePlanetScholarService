@@ -6324,9 +6324,24 @@ export default function ApplicationFormPage() {
 
                                 const lower = (previewDocUrl && typeof previewDocUrl === 'string') ? previewDocUrl.toLowerCase() : ''
                                 const isBlob = lower.startsWith('blob:')
-                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) || lower.includes('/image/upload/') || (isBlob && previewDocUrl.includes('image'))
-                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(lower) || lower.includes('/video/upload/') || (isBlob && previewDocUrl.includes('video'))
-                                const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower)
+                                const isCloudinary = lower.includes('cloudinary.com')
+
+                                // PDF files - check extension and Cloudinary raw path
+                                const isPDF = /\.pdf(\?|$)/.test(lower) ||
+                                    (isCloudinary && lower.includes('/raw/upload/') && lower.endsWith('.pdf')) ||
+                                    (isBlob && lower.includes('blob:') && previewDocUrl.includes('pdf'))
+
+                                // Refined file type detection
+                                const isImage = (/\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) ||
+                                    lower.includes('/image/upload/') ||
+                                    (isBlob && previewDocUrl.includes('image'))) && !isPDF
+
+                                const isVideo = (/\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?|$)/.test(lower) ||
+                                    lower.includes('/video/upload/') ||
+                                    (isCloudinary && lower.includes('/raw/upload/') && /\.(mp4|webm|mov|m4v)/.test(lower)) ||
+                                    (isBlob && previewDocUrl.includes('video'))) && !isPDF && !isImage
+
+                                const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower) && !isPDF && !isImage && !isVideo
 
                                 if (isImage) {
                                     return (
@@ -6349,6 +6364,25 @@ export default function ApplicationFormPage() {
                                                 controls
                                                 autoPlay
                                                 className="max-w-full max-h-full shadow-2xl"
+                                            >
+                                                <source src={previewDocUrl} type="video/mp4" />
+                                                Your browser does not support video playback.
+                                            </video>
+                                        </div>
+                                    )
+                                }
+
+                                // PDF files - use direct iframe for native browser rendering (most reliable for PDFs)
+                                if (isPDF) {
+                                    return (
+                                        <div className="w-full h-full relative bg-white">
+                                            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
+                                                Loading PDF Document...
+                                            </div>
+                                            <iframe
+                                                src={previewDocUrl}
+                                                className="w-full h-full border-none relative z-10"
+                                                title="PDF Document Preview"
                                             />
                                         </div>
                                     )
@@ -6390,13 +6424,18 @@ export default function ApplicationFormPage() {
                                     )
                                 }
 
-                                // Default: use iframe for PDFs and unknown types
+                                // Default fallback: direct iframe (native browser rendering for unknown but compatible types)
                                 return (
-                                    <iframe
-                                        src={previewDocUrl}
-                                        className="w-full h-full border-none bg-white font-sans"
-                                        title="Document Preview"
-                                    />
+                                    <div className="w-full h-full relative bg-white">
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
+                                            Loading Document...
+                                        </div>
+                                        <iframe
+                                            src={previewDocUrl}
+                                            className="w-full h-full border-none relative z-10"
+                                            title="Document Preview"
+                                        />
+                                    </div>
                                 )
                             })()}
                         </div>

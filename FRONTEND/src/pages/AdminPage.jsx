@@ -2902,7 +2902,7 @@ export default function AdminPage() {
                                             <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                                                 <div className="flex flex-col gap-0.5 min-w-0">
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{doc.label}</span>
-                                                    {fileUrl && typeof fileUrl === 'string' && fileUrl.length > 5 ? (
+                                                    {fileUrl && typeof fileUrl === 'string' && fileUrl.startsWith('http') ? (
                                                         <button
                                                             onClick={() => {
                                                                 setPreviewDocUrl(fileUrl)
@@ -2939,8 +2939,11 @@ export default function AdminPage() {
                                                 <span className="text-emerald-700 font-black uppercase tracking-widest text-sm mt-2">Video Uploaded</span>
                                                 <button
                                                     onClick={() => {
-                                                        setPreviewDocUrl(selectedApplication.moreInfo.video)
-                                                        setShowDocPreviewModal(true)
+                                                        const videoUrl = selectedApplication.moreInfo.video;
+                                                        if (typeof videoUrl === 'string' && videoUrl.startsWith('http')) {
+                                                            setPreviewDocUrl(videoUrl)
+                                                            setShowDocPreviewModal(true)
+                                                        }
                                                     }}
                                                     className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-200 mt-2"
                                                 >
@@ -3370,10 +3373,24 @@ export default function AdminPage() {
 
                                 const lower = (previewDocUrl && typeof previewDocUrl === 'string') ? previewDocUrl.toLowerCase() : ''
                                 const isBlob = lower.startsWith('blob:')
-                                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) || lower.includes('/image/upload/') || (isBlob && previewDocUrl.includes('image'))
-                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/.test(lower) || lower.includes('/video/upload/') || (isBlob && previewDocUrl.includes('video'))
-                                const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower)
-                                const isPdf = lower.endsWith('.pdf') || lower.includes('.pdf?')
+                                const isCloudinary = lower.includes('cloudinary.com')
+
+                                // PDF files - check extension and Cloudinary raw path
+                                const isPDF = /\.pdf(\?|$)/.test(lower) ||
+                                    (isCloudinary && lower.includes('/raw/upload/') && lower.endsWith('.pdf')) ||
+                                    (isBlob && lower.includes('blob:') && previewDocUrl.includes('pdf'))
+
+                                // Refined file type detection
+                                const isImage = (/\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff)(\?|$)/.test(lower) ||
+                                    lower.includes('/image/upload/') ||
+                                    (isBlob && previewDocUrl.includes('image'))) && !isPDF
+
+                                const isVideo = (/\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?|$)/.test(lower) ||
+                                    lower.includes('/video/upload/') ||
+                                    (isCloudinary && lower.includes('/raw/upload/') && /\.(mp4|webm|mov|m4v)/.test(lower)) ||
+                                    (isBlob && previewDocUrl.includes('video'))) && !isPDF && !isImage
+
+                                const isOfficeDoc = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?|$)/.test(lower) && !isPDF && !isImage && !isVideo
 
                                 if (isImage) {
                                     return (
@@ -3396,6 +3413,25 @@ export default function AdminPage() {
                                                 controls
                                                 autoPlay
                                                 className="max-w-full max-h-full shadow-2xl"
+                                            >
+                                                <source src={previewDocUrl} type="video/mp4" />
+                                                Your browser does not support video playback.
+                                            </video>
+                                        </div>
+                                    )
+                                }
+
+                                // PDF files - use direct iframe for native browser rendering (most reliable for PDFs)
+                                if (isPDF) {
+                                    return (
+                                        <div className="w-full h-full relative bg-white">
+                                            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
+                                                Loading PDF Document...
+                                            </div>
+                                            <iframe
+                                                src={previewDocUrl}
+                                                className="w-full h-full border-none relative z-10"
+                                                title="PDF Document Preview"
                                             />
                                         </div>
                                     )
@@ -3437,13 +3473,18 @@ export default function AdminPage() {
                                     )
                                 }
 
-                                // Default: use iframe for PDFs and unknown types
+                                // Default fallback: direct iframe (native browser rendering for unknown but compatible types)
                                 return (
-                                    <iframe
-                                        src={previewDocUrl}
-                                        className="w-full h-full border-none bg-white font-sans"
-                                        title="Document Preview"
-                                    />
+                                    <div className="w-full h-full relative bg-white">
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm animate-pulse z-0">
+                                            Loading Document...
+                                        </div>
+                                        <iframe
+                                            src={previewDocUrl}
+                                            className="w-full h-full border-none relative z-10"
+                                            title="Document Preview"
+                                        />
+                                    </div>
                                 )
                             })()}
                         </div>

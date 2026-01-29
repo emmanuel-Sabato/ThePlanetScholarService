@@ -415,11 +415,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const isProduction = process.env.NODE_ENV === 'production';
+console.log(`[AUTH] Environment: ${process.env.NODE_ENV || 'development'}, isProduction: ${isProduction}`);
+
 // Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'scholarsite-secret-key',
-    resave: true,
-    saveUninitialized: true,
+    resave: false, // Changed to false for better connect-mongo compatibility
+    saveUninitialized: false, // Changed to false to avoid setting cookies before login
     store: MongoStore.create({
         client: client,
         dbName: 'scholarsite',
@@ -428,10 +431,26 @@ app.use(session({
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
-        secure: true, // Always true for cross-site SameSite: none
-        sameSite: 'none'
+        // If we are on localhost, we MUST NOT use secure: true because it's usually HTTP
+        // Browsers will not send secure cookies over HTTP.
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        httpOnly: true
     }
 }));
+
+// Debug Endpoint
+app.get('/api/debug-session', (req, res) => {
+    res.json({
+        hasSession: !!req.session,
+        hasUser: !!req.session?.user,
+        user: req.session?.user || null,
+        cookie: req.session?.cookie || null,
+        isProduction,
+        nodeEnv: process.env.NODE_ENV
+    });
+});
+
 
 
 const multer = require('multer');
@@ -1555,8 +1574,13 @@ app.put('/api/applications/:id', async (req, res) => {
         const { _id, ...updateData } = req.body;
 
         // Security check: Ensure user owns this application OR is admin
-        if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+        if (!req.session.user) {
+            console.log(`[AUTH ERROR] Unauthorized attempt to update application ${id}. No user in session.`);
+            console.log('[AUTH DEBUG] Session ID:', req.sessionID);
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
 
+        console.log(`[AUTH] Application update request by: ${req.session.user.email} (Role: ${req.session.user.role}) for App: ${id}`);
         const query = (id.length === 24 && ObjectId.isValid(id)) ? { _id: new ObjectId(id) } : { id: id };
         const existingApp = await db.collection('applications').findOne(query);
 
