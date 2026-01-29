@@ -69,6 +69,7 @@ export default function DashboardPage() {
     const { user, loading: authLoading, logout, updateProfile } = useAuth()
     const { showToast } = useToast()
     const [activeTab, setActiveTab] = useState('overview')
+    const [config, setConfig] = useState(ENROLLMENT_CONFIG)
     const [searchParams] = useSearchParams()
     const scholarshipId = searchParams.get('scholarshipId')
     const [isWizardOpen, setIsWizardOpen] = useState(false)
@@ -82,6 +83,7 @@ export default function DashboardPage() {
     const [currentTime, setCurrentTime] = useState(new Date())
 
     useEffect(() => {
+        fetchConfig()
         const timer = setInterval(() => {
             setCurrentTime(new Date())
         }, 10)
@@ -92,6 +94,18 @@ export default function DashboardPage() {
     const [showStartAppModal, setShowStartAppModal] = useState(false)
     const [startAppStep, setStartAppStep] = useState(1) // 1=Terms, 2=Level, 3=Funding, 4=Benefits, 5=Language, 6=Programs, 7=Confirm
     const [agreedToTerms, setAgreedToTerms] = useState(false)
+
+    const fetchConfig = async () => {
+        try {
+            const response = await fetch(`${API_URL}/enrollment-config`, { credentials: 'include' })
+            if (response.ok) {
+                const data = await response.json()
+                setConfig(data)
+            }
+        } catch (error) {
+            console.error('Failed to fetch enrollment config', error)
+        }
+    }
 
     // New 7-step flow state
     const [selectedLevel, setSelectedLevel] = useState('') // chinese_language, advanced_diploma, bachelor, masters, phd
@@ -1368,7 +1382,7 @@ export default function DashboardPage() {
                                     <h4 className="font-bold text-slate-800 text-lg">Select your level of study:</h4>
 
                                     <div className="space-y-3">
-                                        {ENROLLMENT_CONFIG.levelsOfStudy.map((level) => (
+                                        {config.levelsOfStudy.map((level) => (
                                             <div key={level.id}>
                                                 <label className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedLevel === level.id ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                                                     <input
@@ -1387,21 +1401,29 @@ export default function DashboardPage() {
 
                                                 {/* Chinese Language Sub-Programs */}
                                                 {level.id === 'chinese_language' && selectedLevel === 'chinese_language' && (
-                                                    <div className="ml-8 mt-2 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Duration:</p>
-                                                        {level.subPrograms.map((sub) => (
-                                                            <label key={sub} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${chineseSubProgram === sub ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-                                                                <input
-                                                                    type="radio"
-                                                                    name="chineseSub"
-                                                                    value={sub}
-                                                                    checked={chineseSubProgram === sub}
-                                                                    onChange={() => setChineseSubProgram(sub)}
-                                                                    className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300"
-                                                                />
-                                                                <span className="text-sm font-medium text-slate-700">{sub}</span>
-                                                            </label>
-                                                        ))}
+                                                    <div className="ml-8 mt-2 space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                        {selectedFunding ? (
+                                                            <>
+                                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                                                    Programs for {config.fundingTypes.find(f => f.id === selectedFunding)?.name}:
+                                                                </p>
+                                                                {(level.subPrograms[config.fundingTypes.find(f => f.id === selectedFunding)?.name] || []).map((sub) => (
+                                                                    <label key={sub} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${chineseSubProgram === sub ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                                                                        <input
+                                                                            type="radio"
+                                                                            name="chineseSub"
+                                                                            value={sub}
+                                                                            checked={chineseSubProgram === sub}
+                                                                            onChange={() => setChineseSubProgram(sub)}
+                                                                            className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300"
+                                                                        />
+                                                                        <span className="text-sm font-medium text-slate-700">{sub}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </>
+                                                        ) : (
+                                                            <p className="text-xs text-slate-400 italic">Please select funding type in next step to see programs, or proceed to select funding first.</p>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -1432,7 +1454,7 @@ export default function DashboardPage() {
                                     <h4 className="font-bold text-slate-800 text-lg">How will you fund your studies?</h4>
 
                                     <div className="space-y-3">
-                                        {ENROLLMENT_CONFIG.fundingTypes.map((funding) => (
+                                        {config.fundingTypes.map((funding) => (
                                             <label key={funding.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedFunding === funding.id ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                                                 <input
                                                     type="radio"
@@ -1481,7 +1503,7 @@ export default function DashboardPage() {
                                     <h4 className="font-bold text-slate-800 text-lg">Select your scholarship benefits:</h4>
 
                                     <div className="space-y-3">
-                                        {ENROLLMENT_CONFIG.scholarshipBenefits.map((benefit) => (
+                                        {config.scholarshipBenefits.map((benefit) => (
                                             <label key={benefit.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedBenefits === benefit.id ? 'border-amber-500 bg-amber-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                                                 <input
                                                     type="radio"
@@ -1520,7 +1542,7 @@ export default function DashboardPage() {
                                     <h4 className="font-bold text-slate-800 text-lg">Select language of instruction:</h4>
 
                                     <div className="space-y-3">
-                                        {ENROLLMENT_CONFIG.languages.map((lang) => (
+                                        {config.languages.map((lang) => (
                                             <label key={lang.id} className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition ${selectedLanguage === lang.id ? 'border-purple-500 bg-purple-50' : 'border-slate-200 hover:bg-slate-50'}`}>
                                                 <input
                                                     type="radio"
@@ -1561,19 +1583,19 @@ export default function DashboardPage() {
                                         <p className="text-xs font-bold text-sky-700 uppercase tracking-wider mb-2">Your Selection</p>
                                         <div className="flex flex-wrap gap-2 text-xs font-semibold">
                                             <span className="px-3 py-1 bg-white rounded-lg border shadow-sm">
-                                                {ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === selectedLevel)?.name}
+                                                {config.levelsOfStudy.find(l => l.id === selectedLevel)?.name}
                                                 {chineseSubProgram && ` - ${chineseSubProgram}`}
                                             </span>
                                             <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-emerald-700">
-                                                {ENROLLMENT_CONFIG.fundingTypes.find(f => f.id === selectedFunding)?.name}
+                                                {config.fundingTypes.find(f => f.id === selectedFunding)?.name}
                                             </span>
                                             {selectedBenefits && (
                                                 <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-amber-700">
-                                                    {ENROLLMENT_CONFIG.scholarshipBenefits.find(b => b.id === selectedBenefits)?.name}
+                                                    {config.scholarshipBenefits.find(b => b.id === selectedBenefits)?.name}
                                                 </span>
                                             )}
                                             <span className="px-3 py-1 bg-white rounded-lg border shadow-sm text-purple-700">
-                                                {ENROLLMENT_CONFIG.languages.find(l => l.id === selectedLanguage)?.name}
+                                                {config.languages.find(l => l.id === selectedLanguage)?.name}
                                             </span>
                                         </div>
                                     </div>
@@ -1584,7 +1606,7 @@ export default function DashboardPage() {
                                             <p className="text-sm text-slate-500">
                                                 {selectedLevel === 'chinese_language'
                                                     ? 'Chinese Language programs available'
-                                                    : `${(ENROLLMENT_CONFIG.programsByLevel[selectedLevel] || []).length} programs available`
+                                                    : `${(config.programsByLevel[selectedLevel] || []).length} programs available`
                                                 }
                                             </p>
                                         </div>
@@ -1602,7 +1624,7 @@ export default function DashboardPage() {
                                             <GraduationCap className="w-12 h-12 text-sky-500 mx-auto mb-4" />
                                             <h4 className="font-bold text-slate-800 text-lg mb-2">Chinese Language Program</h4>
                                             <p className="text-slate-500 text-sm mb-4">
-                                                {chineseSubProgram} • {ENROLLMENT_CONFIG.fundingTypes.find(f => f.id === selectedFunding)?.name}
+                                                {chineseSubProgram} • {config.fundingTypes.find(f => f.id === selectedFunding)?.name}
                                             </p>
                                             <button
                                                 onClick={() => handleAddApplication({
@@ -1621,7 +1643,7 @@ export default function DashboardPage() {
                                         </div>
                                     ) : (
                                         <div className="grid gap-3 max-h-[50vh] overflow-y-auto">
-                                            {(ENROLLMENT_CONFIG.programsByLevel[selectedLevel] || []).map((program, idx) => (
+                                            {(config.programsByLevel[selectedLevel] || []).map((program, idx) => (
                                                 <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 hover:border-sky-300 hover:shadow-sm transition">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-2 h-2 rounded-full bg-sky-500" />
@@ -1630,7 +1652,7 @@ export default function DashboardPage() {
                                                     <button
                                                         onClick={() => handleAddApplication({
                                                             title: program,
-                                                            degree: ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === selectedLevel)?.name,
+                                                            degree: config.levelsOfStudy.find(l => l.id === selectedLevel)?.name,
                                                             university: 'To Be Assigned',
                                                             language: selectedLanguage === 'chinese' ? 'Chinese' : 'English',
                                                             fundingType: selectedFunding,

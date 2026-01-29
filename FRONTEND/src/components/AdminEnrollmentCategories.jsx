@@ -83,10 +83,31 @@ const ENROLLMENT_CONFIG = {
 
 export default function AdminEnrollmentCategories() {
     const [expandedSection, setExpandedSection] = useState('levels')
+    const [config, setConfig] = useState(ENROLLMENT_CONFIG)
     const [programs, setPrograms] = useState(ENROLLMENT_CONFIG.programsByLevel)
     const [isEditingPrograms, setIsEditingPrograms] = useState(false)
     const [editingLevel, setEditingLevel] = useState(null)
     const [newProgram, setNewProgram] = useState('')
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        fetchConfig()
+    }, [])
+
+    const fetchConfig = async () => {
+        try {
+            const response = await fetch(`${API_URL}/enrollment-config`, { credentials: 'include' })
+            if (response.ok) {
+                const data = await response.json()
+                setConfig(data)
+                setPrograms(data.programsByLevel)
+            }
+        } catch (error) {
+            console.error('Failed to fetch enrollment config', error)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const toggleSection = (section) => {
         setExpandedSection(expandedSection === section ? null : section)
@@ -110,13 +131,18 @@ export default function AdminEnrollmentCategories() {
 
     const handleSavePrograms = async () => {
         try {
-            await fetch(`${API_URL}/enrollment-config/programs`, {
+            const updatedConfig = { ...config, programsByLevel: programs }
+            const response = await fetch(`${API_URL}/enrollment-config`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ programs })
+                credentials: 'include',
+                body: JSON.stringify(updatedConfig)
             })
-            setIsEditingPrograms(false)
-            setEditingLevel(null)
+            if (response.ok) {
+                setConfig(updatedConfig)
+                setIsEditingPrograms(false)
+                setEditingLevel(null)
+            }
         } catch (error) {
             console.error('Failed to save programs', error)
         }
@@ -163,7 +189,7 @@ export default function AdminEnrollmentCategories() {
                         </div>
                         <div className="text-left">
                             <h3 className="font-bold text-slate-800">Step 1: Levels of Study</h3>
-                            <p className="text-xs text-slate-500">{ENROLLMENT_CONFIG.levelsOfStudy.length} levels configured</p>
+                            <p className="text-xs text-slate-500">{config.levelsOfStudy.length} levels configured</p>
                         </div>
                     </div>
                     <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${expandedSection === 'levels' ? 'rotate-180' : ''}`} />
@@ -171,7 +197,7 @@ export default function AdminEnrollmentCategories() {
 
                 {expandedSection === 'levels' && (
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                        {ENROLLMENT_CONFIG.levelsOfStudy.map((level) => (
+                        {config.levelsOfStudy.map((level) => (
                             <div key={level.id} className="bg-white p-4 rounded-xl border border-slate-200">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -222,7 +248,7 @@ export default function AdminEnrollmentCategories() {
 
                 {expandedSection === 'funding' && (
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                        {ENROLLMENT_CONFIG.fundingTypes.map((type) => (
+                        {config.fundingTypes.map((type) => (
                             <div key={type.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                 <span className="font-semibold text-slate-800">{type.name}</span>
@@ -255,7 +281,7 @@ export default function AdminEnrollmentCategories() {
 
                 {expandedSection === 'benefits' && (
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                        {ENROLLMENT_CONFIG.scholarshipBenefits.map((benefit) => (
+                        {config.scholarshipBenefits.map((benefit) => (
                             <div key={benefit.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-amber-500" />
                                 <span className="font-semibold text-slate-800">{benefit.name}</span>
@@ -285,7 +311,7 @@ export default function AdminEnrollmentCategories() {
 
                 {expandedSection === 'language' && (
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                        {ENROLLMENT_CONFIG.languages.map((lang) => (
+                        {config.languages.map((lang) => (
                             <div key={lang.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-purple-500" />
                                 <span className="font-semibold text-slate-800">{lang.name}</span>
@@ -316,7 +342,7 @@ export default function AdminEnrollmentCategories() {
                 {expandedSection === 'programs' && (
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-4">
                         {Object.entries(programs).map(([levelId, programList]) => {
-                            const levelName = ENROLLMENT_CONFIG.levelsOfStudy.find(l => l.id === levelId)?.name || levelId
+                            const levelName = config.levelsOfStudy.find(l => l.id === levelId)?.name || levelId
                             const isEditing = editingLevel === levelId
 
                             return (

@@ -92,8 +92,10 @@ export default function AdminPage() {
         programMode: 'On-Campus',
         programType: 'Full-time',
         language: 'English',
-        category: '',
-        subCategory: '',
+        level: '',
+        funding: '',
+        benefits: '',
+        program: '',
         tuition: '',
         duration: '',
         fastTrack: false,
@@ -111,6 +113,7 @@ export default function AdminPage() {
     const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
     const [passwordMessage, setPasswordMessage] = useState('')
     const [fetchErrors, setFetchErrors] = useState({})
+    const [enrollmentConfig, setEnrollmentConfig] = useState(null)
 
     // User Management States
     const [showUserModal, setShowUserModal] = useState(false)
@@ -205,7 +208,7 @@ export default function AdminPage() {
             const endpoints = [
                 'scholarships', 'enrollment-categories', 'services', 'mission',
                 'team', 'blog', 'faqs', 'testimonials', 'applications', 'users',
-                'notices/admin', 'dashboard-faqs/admin', 'surveys'
+                'notices/admin', 'dashboard-faqs/admin', 'surveys', 'enrollment-config'
             ]
 
             const results = await Promise.all(
@@ -225,7 +228,7 @@ export default function AdminPage() {
             const [
                 scholarshipsData, categoriesData, servicesData, missionData,
                 teamData, blogData, faqsData, testimonialsData, applicantsData, usersData,
-                noticesData, dashboardFaqsData, surveysData
+                noticesData, dashboardFaqsData, surveysData, enrollmentConfigData
             ] = results;
 
             const errors = {}
@@ -255,6 +258,9 @@ export default function AdminPage() {
             setNotices(Array.isArray(noticesData) ? noticesData : [])
             setDashboardFaqs(Array.isArray(dashboardFaqsData) ? dashboardFaqsData : [])
             setSurveys(Array.isArray(surveysData) ? surveysData : [])
+            if (enrollmentConfigData && !enrollmentConfigData.__error) {
+                setEnrollmentConfig(enrollmentConfigData)
+            }
 
         } catch (error) {
             console.error('Critical Error fetching data:', error)
@@ -1250,8 +1256,10 @@ export default function AdminPage() {
                                                     programMode: 'On-Campus',
                                                     programType: 'Full-time',
                                                     language: 'English',
-                                                    category: '',
-                                                    subCategory: '',
+                                                    level: '',
+                                                    funding: '',
+                                                    benefits: '',
+                                                    program: '',
                                                     fastTrack: false,
                                                     isPromoted: false
                                                 }))
@@ -1286,30 +1294,105 @@ export default function AdminPage() {
                                                 </div>
 
                                                 <div className="space-y-4">
-                                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Classification</h3>
-                                                    <div className="grid gap-4 md:grid-cols-2">
-                                                        <select
-                                                            required
-                                                            value={scholarshipForm.category}
-                                                            onChange={(e) => setScholarshipForm({ ...scholarshipForm, category: e.target.value, subCategory: '' })}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
-                                                        >
-                                                            <option value="">Select Enrollment Category</option>
-                                                            {categories.map(cat => (
-                                                                <option key={cat._id} value={cat.name}>{cat.name}</option>
-                                                            ))}
-                                                        </select>
-                                                        <select
-                                                            value={scholarshipForm.subCategory}
-                                                            onChange={(e) => setScholarshipForm({ ...scholarshipForm, subCategory: e.target.value })}
-                                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
-                                                            disabled={!scholarshipForm.category}
-                                                        >
-                                                            <option value="">Select Sub-Program (Optional)</option>
-                                                            {categories.find(c => c.name === scholarshipForm.category)?.subCategories?.map((sub, idx) => (
-                                                                <option key={idx} value={sub}>{sub}</option>
-                                                            ))}
-                                                        </select>
+                                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Enrollment Flow Metadata</h3>
+                                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                                        {/* Step 1: Level */}
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Level of Study</label>
+                                                            <select
+                                                                required
+                                                                value={scholarshipForm.level}
+                                                                onChange={(e) => setScholarshipForm({ ...scholarshipForm, level: e.target.value, program: '' })}
+                                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                                                            >
+                                                                <option value="">Select Level</option>
+                                                                {enrollmentConfig?.levelsOfStudy.map(level => (
+                                                                    <option key={level.id} value={level.id}>{level.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Step 2: Funding */}
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Funding Type</label>
+                                                            <select
+                                                                required
+                                                                value={scholarshipForm.funding}
+                                                                onChange={(e) => setScholarshipForm({ ...scholarshipForm, funding: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                                                            >
+                                                                <option value="">Select Funding</option>
+                                                                {enrollmentConfig?.fundingTypes.map(f => (
+                                                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Step 3: Benefits (Conditional) */}
+                                                        {scholarshipForm.funding === 'scholarship' && (
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Scholarship Benefits</label>
+                                                                <select
+                                                                    required
+                                                                    value={scholarshipForm.benefits}
+                                                                    onChange={(e) => setScholarshipForm({ ...scholarshipForm, benefits: e.target.value })}
+                                                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                                                                >
+                                                                    <option value="">Select Benefits</option>
+                                                                    {enrollmentConfig?.scholarshipBenefits.map(b => (
+                                                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Step 4: Language */}
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Language of Instruction</label>
+                                                            <select
+                                                                required
+                                                                value={scholarshipForm.language}
+                                                                onChange={(e) => setScholarshipForm({ ...scholarshipForm, language: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                                                            >
+                                                                <option value="">Select Language</option>
+                                                                {enrollmentConfig?.languages.map(l => (
+                                                                    <option key={l.id} value={l.id}>{l.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+
+                                                        {/* Step 5: Program */}
+                                                        <div className="md:col-span-2 lg:col-span-2">
+                                                            <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Specific Program</label>
+                                                            <select
+                                                                required
+                                                                value={scholarshipForm.program}
+                                                                onChange={(e) => setScholarshipForm({ ...scholarshipForm, program: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                                                                disabled={!scholarshipForm.level}
+                                                            >
+                                                                <option value="">Select Program</option>
+                                                                {scholarshipForm.level === 'chinese_language' ? (
+                                                                    <>
+                                                                        <optgroup label="Self-Funded">
+                                                                            {enrollmentConfig?.levelsOfStudy.find(l => l.id === 'chinese_language')?.subPrograms['Self-Funded'].map((p, i) => (
+                                                                                <option key={`sf-${i}`} value={p}>{p}</option>
+                                                                            ))}
+                                                                        </optgroup>
+                                                                        <optgroup label="Scholarship">
+                                                                            {enrollmentConfig?.levelsOfStudy.find(l => l.id === 'chinese_language')?.subPrograms['Scholarship'].map((p, i) => (
+                                                                                <option key={`sc-${i}`} value={p}>{p}</option>
+                                                                            ))}
+                                                                        </optgroup>
+                                                                    </>
+                                                                ) : (
+                                                                    enrollmentConfig?.programsByLevel[scholarshipForm.level]?.map((p, i) => (
+                                                                        <option key={i} value={p}>{p}</option>
+                                                                    ))
+                                                                )}
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                 </div>
 

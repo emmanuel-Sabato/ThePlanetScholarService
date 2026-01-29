@@ -50,6 +50,7 @@ async function connectDB() {
 
         // Always check for category and scholarship updates/seeding
         await seedEnrollmentCategories();
+        await seedEnrollmentConfig();
         await seedScholarships();
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
@@ -244,6 +245,81 @@ async function seedEnrollmentCategories() {
         }
     } catch (error) {
         console.error('❌ Error seeding enrollment categories:', error);
+    }
+}
+
+async function seedEnrollmentConfig() {
+    try {
+        const settings = db.collection('system_settings');
+        const config = await settings.findOne({ key: 'enrollment_config' });
+
+        if (!config) {
+            console.log('🌱 Seeding initial Enrollment Configuration...');
+            const defaultConfig = {
+                key: 'enrollment_config',
+                value: {
+                    levelsOfStudy: [
+                        {
+                            id: 'chinese_language',
+                            name: 'Chinese Language',
+                            hasFundingOptions: true,
+                            subPrograms: {
+                                'Self-Funded': ['One Year Program', 'One Semester Program'],
+                                'Scholarship': ['One Year Program', 'One Semester Program']
+                            }
+                        },
+                        { id: 'advanced_diploma', name: 'Advanced Diploma', hasFundingOptions: true },
+                        { id: 'bachelor', name: 'Bachelor Degree', hasFundingOptions: true },
+                        { id: 'masters', name: "Master's Degree", hasFundingOptions: true },
+                        { id: 'phd', name: 'PhD', hasFundingOptions: true }
+                    ],
+                    fundingTypes: [
+                        { id: 'scholarship', name: 'Scholarship' },
+                        { id: 'self_funded', name: 'Self-Funded' }
+                    ],
+                    scholarshipBenefits: [
+                        { id: 'full', name: 'Free tuition + Free hostel + Monthly stipend' },
+                        { id: 'tuition_hostel', name: 'Free tuition + Free hostel' },
+                        { id: 'tuition_only', name: 'Free tuition only' },
+                        { id: 'half_tuition', name: 'Half tuition' }
+                    ],
+                    languages: [
+                        { id: 'chinese', name: 'Chinese-taught' },
+                        { id: 'english', name: 'English-taught' }
+                    ],
+                    programsByLevel: {
+                        advanced_diploma: [
+                            'Big Data Technology', 'Computer Science', 'Software Engineering',
+                            'Nursing', 'Tourism Management', 'International Economics & Trade',
+                            'Animal Husbandry', 'Crop Production', 'Agricultural Mechanization'
+                        ],
+                        bachelor: [
+                            'Computer Science', 'Software Engineering', 'Artificial Intelligence',
+                            'Engineering (Civil, Mechanical, Electrical, Chemical)',
+                            'Medicine / Nursing / Pharmacy', 'Business Administration',
+                            'Architecture & Urban Planning', 'Logistics & Supply Chain',
+                            'Environmental & Agricultural Sciences',
+                            'Mathematics, Physics, English, Geology, Ecology'
+                        ],
+                        masters: [
+                            'Computer Science & AI', 'Engineering Programs', 'Medicine & Pharmacy',
+                            'Business Administration', 'Biotechnology', 'Environmental & Material Sciences',
+                            'Architecture & Urban/Rural Development'
+                        ],
+                        phd: [
+                            'Software Engineering', 'Artificial Intelligence', 'Engineering Fields',
+                            'Medicine & Pharmacy', 'Agricultural Sciences',
+                            'Environmental, Geological & Material Sciences'
+                        ]
+                    }
+                },
+                updatedAt: new Date()
+            };
+            await settings.insertOne(defaultConfig);
+            console.log('✅ Enrollment Configuration seeded successfully');
+        }
+    } catch (error) {
+        console.error('❌ Error seeding enrollment configuration:', error);
     }
 }
 
@@ -509,6 +585,43 @@ app.delete('/api/enrollment-categories/:id', async (req, res) => {
         res.json({ message: 'Category deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete category' });
+    }
+});
+
+// ========== ENROLLMENT CONFIGURATION ==========
+app.get('/api/enrollment-config', async (req, res) => {
+    try {
+        const settings = db.collection('system_settings');
+        const config = await settings.findOne({ key: 'enrollment_config' });
+        if (!config) {
+            return res.status(404).json({ error: 'Enrollment configuration not found' });
+        }
+        res.json(config.value);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch enrollment config' });
+    }
+});
+
+app.put('/api/enrollment-config', async (req, res) => {
+    try {
+        if (!req.session.user || req.session.user.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const settings = db.collection('system_settings');
+        await settings.updateOne(
+            { key: 'enrollment_config' },
+            {
+                $set: {
+                    value: req.body,
+                    updatedAt: new Date()
+                }
+            },
+            { upsert: true }
+        );
+        res.json({ message: 'Enrollment configuration updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update enrollment config' });
     }
 });
 
