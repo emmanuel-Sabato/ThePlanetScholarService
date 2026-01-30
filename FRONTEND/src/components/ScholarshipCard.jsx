@@ -4,13 +4,13 @@ import { MapPin, Calendar, Clock, GraduationCap, Globe, Info, Building2, Bookmar
 
 const getRandomImage = (id) => {
   const images = [
-    "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?auto=format&fit=crop&q=80&w=1000",
     "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1521587760476-6c12a7104b6b?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=1000",
     "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000"
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1462536943532-57a629f6cc60?auto=format&fit=crop&q=80&w=1000"
   ]
-  return images[id?.charCodeAt(id.length - 1) % images.length] || images[0]
+  return images[Math.abs(id?.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % images.length)] || images[0]
 }
 
 const getUniversityLogo = (universityName) => {
@@ -66,11 +66,16 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
   }
 
   const [imgError, setImgError] = useState(false)
-  const brokenId = "photo-1523050854058-8df90110c9f1"
+  const brokenIds = ["photo-1523050854058-8df90110c9f1", "photo-1541339907198-e08756ebafe1", "photo-1521587760476-6c12a7104b6b"]
 
-  const imageUrl = (!imgError && scholarship.image && scholarship.image !== 'None' && !scholarship.image.includes(brokenId))
-    ? scholarship.image
-    : getRandomImage(scholarship._id || scholarship.id)
+  const isImageBroken = !scholarship.image ||
+    scholarship.image === 'None' ||
+    brokenIds.some(id => scholarship.image.includes(id)) ||
+    imgError
+
+  const imageUrl = isImageBroken
+    ? getRandomImage(scholarship._id || scholarship.id)
+    : scholarship.image
 
   return (
     <div className={`relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group ${isExpired ? 'opacity-80' : ''}`}>

@@ -87,14 +87,17 @@ async function seedScholarships() {
 
         // Check if existing data needs update (missing metadata or broken/unwanted images)
         const sample = await scholarshipsCollection.findOne();
-        const brokenId = "photo-1523050854058-8df90110c9f1";
-        const ceremonyId = "photo-1523580494863-6f3031224c94"; // The ceremony image the user wants to remove
+        const brokenIds = [
+            "photo-1523050854058-8df90110c9f1",
+            "photo-1541339907198-e08756ebafe1",
+            "photo-1521587760476-6c12a7104b6b",
+            "photo-1523580494863-6f3031224c94" // the ceremony one
+        ];
 
         const unwantedSample = await scholarshipsCollection.findOne({
-            $or: [
-                { image: { $regex: brokenId } },
-                { image: { $regex: ceremonyId } }
-            ]
+            image: {
+                $regex: brokenIds.join('|')
+            }
         });
 
         const needsUpdate = sample && (
@@ -105,7 +108,7 @@ async function seedScholarships() {
 
         if (count === 0 || needsUpdate) {
             if (needsUpdate) {
-                console.log('🔄 Detected missing metadata or unwanted images. Clearing to re-seed...');
+                console.log('🔄 Detected missing metadata or broken/unwanted images. Clearing to re-seed...');
                 await scholarshipsCollection.deleteMany({});
             } else {
                 console.log('🌱 Seeding initial Scholarships...');
@@ -128,7 +131,7 @@ async function seedScholarships() {
                         description: `Experience the ${subCategory} at ${uni.name}. This program offers a unique opportunity to study in ${uni.location}.`,
                         eligibility: "Open to international students.",
                         benefits: fundingType === "Scholarship" ? "Scholarship benefits included." : "Self-funded program.",
-                        image: uni.image || "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop", // Default campus image
+                        image: uni.image || "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop", // Verified academic default
                         programMode: "On-Campus",
                         programType: "Full-time",
                         language: "English",
@@ -161,29 +164,29 @@ async function seedScholarships() {
             const tuitionOnly = { tuition: true, accommodation: false, stipend: 0 };
 
             addUnis("Short-Term Program", "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp", [
-                { name: "Harbin Engineering University", location: "Harbin", image: "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop" },
-                { name: "Harbin Institute of Technology", location: "Harbin", image: "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop" }
+                { name: "Harbin Engineering University", location: "Harbin", image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop" },
+                { name: "Harbin Institute of Technology", location: "Harbin", image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=800&auto=format&fit=crop" }
             ], "Chinese Language", "Scholarship", tuitionHostel);
 
             addUnis("Chinese Government Scholarship", "中国政府奖学金 Chinese Government Scholarship", [
-                { name: "Zhejiang University", location: "Hangzhou", image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop" },
+                { name: "Zhejiang University", location: "Hangzhou", image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=800&auto=format&fit=crop" },
                 { name: "Wuhan University", location: "Wuhan", image: "https://images.unsplash.com/photo-1592285777455-0407cbfe50db?q=80&w=800&auto=format&fit=crop" }
             ], "Master’s Degree", "Scholarship", fullScholarship, "HSK 5", "6.5");
 
             addUnis("Bachelor's Degree Program", "Engineering Studies", [
-                { name: "Tsinghua University", location: "Beijing", image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b955?q=80&w=800&auto=format&fit=crop" },
-                { name: "Peking University", location: "Beijing", image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=800&auto=format&fit=crop" }
+                { name: "Tsinghua University", location: "Beijing", image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=800&auto=format&fit=crop" },
+                { name: "Peking University", location: "Beijing", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop" }
             ], "Bachelor Degree", "Scholarship", tuitionOnly, "HSK 4", "6.0");
 
             addUnis("Doctoral Degree Program", "Advanced Research", [
-                { name: "Fudan University", location: "Shanghai", image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=800&auto=format&fit=crop" },
-                { name: "Nanjing University", location: "Nanjing", image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=800&auto=format&fit=crop" }
+                { name: "Fudan University", location: "Shanghai", image: "https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?q=80&w=800&auto=format&fit=crop" },
+                { name: "Nanjing University", location: "Nanjing", image: "https://images.unsplash.com/photo-1462536943532-57a629f6cc60?q=80&w=800&auto=format&fit=crop" }
             ], "PhD", "Scholarship", fullScholarship, "HSK 6", "7.0");
 
             // 2. Self-Funded
             addUnis("Self-funded Undergraduate Program", "Bachelor of Business", [
                 { name: "Shanghai Jiao Tong University", location: "Shanghai", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop" },
-                { name: "Sun Yat-sen University", location: "Guangzhou", image: "https://images.unsplash.com/photo-1462536943532-57a629f6cc60?q=80&w=800&auto=format&fit=crop" }
+                { name: "Sun Yat-sen University", location: "Guangzhou", image: "https://images.unsplash.com/photo-1531058240602-04b060d37f41?q=80&w=800&auto=format&fit=crop" }
             ], "Bachelor Degree", "Self-Funded");
 
             addUnis("Self-funded Chinese Language Program", "Intensive Chinese", [
