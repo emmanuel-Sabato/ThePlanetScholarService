@@ -30,7 +30,7 @@ const ScholarshipCTA = () => {
                 <div className="shrink-0">
                     <Link
                         to="/register"
-                        className="inline-flex items-center gap-3 bg-white text-slate-900 px-10 py-5 rounded-2xl font-black text-lg hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 shadow-[0_20px_40px_-15px_rgba(255,255,255,0.2)] hover:shadow-[0_25px_50px_-12px_rgba(255,255,255,0.3)]"
+                        className="inline-flex items-center gap-3 bg-gradient-to-r from-sky-600 to-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-lg hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 shadow-[0_20px_40px_-15px_rgba(14,165,233,0.3)] hover:shadow-[0_25px_50px_-12px_rgba(14,165,233,0.4)]"
                     >
                         Get Personalized Help
                         <ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform duration-300" />
