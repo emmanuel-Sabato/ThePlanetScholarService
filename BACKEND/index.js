@@ -113,7 +113,7 @@ async function seedScholarships() {
                         description: `Experience the ${subCategory} at ${uni.name}. This program offers a unique opportunity to study in ${uni.location}.`,
                         eligibility: "Open to international students.",
                         benefits: fundingType === "Scholarship" ? "Scholarship benefits included." : "Self-funded program.",
-                        image: "", // Placeholder or default
+                        image: uni.image || "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop", // Default campus image
                         programMode: "On-Campus",
                         programType: "Full-time",
                         language: "English",
@@ -146,44 +146,44 @@ async function seedScholarships() {
             const tuitionOnly = { tuition: true, accommodation: false, stipend: 0 };
 
             addUnis("Short-Term Program", "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp", [
-                { name: "Harbin Engineering University", location: "Harbin" },
-                { name: "Harbin Institute of Technology", location: "Harbin" }
+                { name: "Harbin Engineering University", location: "Harbin", image: "https://images.unsplash.com/photo-1622397333309-3056849bc70b?q=80&w=800&auto=format&fit=crop" },
+                { name: "Harbin Institute of Technology", location: "Harbin", image: "https://images.unsplash.com/photo-1590012357758-29947969350f?q=80&w=800&auto=format&fit=crop" }
             ], "Chinese Language", "Scholarship", tuitionHostel);
 
             addUnis("Chinese Government Scholarship", "中国政府奖学金 Chinese Government Scholarship", [
-                { name: "Zhejiang University", location: "Hangzhou" },
-                { name: "Wuhan University", location: "Wuhan" }
+                { name: "Zhejiang University", location: "Hangzhou", image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop" },
+                { name: "Wuhan University", location: "Wuhan", image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&auto=format&fit=crop" }
             ], "Master’s Degree", "Scholarship", fullScholarship, "HSK 5", "6.5");
 
             addUnis("Bachelor's Degree Program", "Engineering Studies", [
-                { name: "Tsinghua University", location: "Beijing" },
-                { name: "Peking University", location: "Beijing" }
+                { name: "Tsinghua University", location: "Beijing", image: "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop" },
+                { name: "Peking University", location: "Beijing", image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=800&auto=format&fit=crop" }
             ], "Bachelor Degree", "Scholarship", tuitionOnly, "HSK 4", "6.0");
 
             addUnis("Doctoral Degree Program", "Advanced Research", [
-                { name: "Fudan University", location: "Shanghai" },
-                { name: "Nanjing University", location: "Nanjing" }
+                { name: "Fudan University", location: "Shanghai", image: "https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?q=80&w=800&auto=format&fit=crop" },
+                { name: "Nanjing University", location: "Nanjing", image: "https://images.unsplash.com/photo-1592285777455-0407cbfe50db?q=80&w=800&auto=format&fit=crop" }
             ], "PhD", "Scholarship", fullScholarship, "HSK 6", "7.0");
 
             // 2. Self-Funded
             addUnis("Self-funded Undergraduate Program", "Bachelor of Business", [
-                { name: "Shanghai Jiao Tong University", location: "Shanghai" },
-                { name: "Sun Yat-sen University", location: "Guangzhou" }
+                { name: "Shanghai Jiao Tong University", location: "Shanghai", image: "https://images.unsplash.com/photo-1526232753935-22a9ca8d67ec?q=80&w=800&auto=format&fit=crop" },
+                { name: "Sun Yat-sen University", location: "Guangzhou", image: "https://images.unsplash.com/photo-1519452635265-7b1fbfd867c0?q=80&w=800&auto=format&fit=crop" }
             ], "Bachelor Degree", "Self-Funded");
 
             addUnis("Self-funded Chinese Language Program", "Intensive Chinese", [
-                { name: "Beijing Language and Culture University", location: "Beijing" },
-                { name: "Heilongjiang University", location: "Harbin" }
+                { name: "Beijing Language and Culture University", location: "Beijing", image: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?q=80&w=800&auto=format&fit=crop" },
+                { name: "Heilongjiang University", location: "Harbin", image: "https://images.unsplash.com/photo-1568791323714-f74af66c619b?q=80&w=800&auto=format&fit=crop" }
             ], "Chinese Language", "Self-Funded");
 
             addUnis("Self-funded Graduate Program", "Master of Finance", [
-                { name: "Zhejiang University", location: "Hangzhou" },
-                { name: "Nankai University", location: "Tianjin" }
+                { name: "Zhejiang University", location: "Hangzhou", image: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=800&auto=format&fit=crop" },
+                { name: "Nankai University", location: "Tianjin", image: "https://images.unsplash.com/photo-1525921429624-479b6a294d4f?q=80&w=800&auto=format&fit=crop" }
             ], "Master’s Degree", "Self-Funded");
 
             addUnis("Self-funded Pre-University Program", "University Bridge", [
-                { name: "Zhejiang University", location: "Hangzhou" },
-                { name: "Fudan University", location: "Shanghai" }
+                { name: "Zhejiang University", location: "Hangzhou", image: "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=800&auto=format&fit=crop" },
+                { name: "Fudan University", location: "Shanghai", image: "https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?q=80&w=800&auto=format&fit=crop" }
             ], "Advanced Diploma", "Self-Funded");
 
             if (scholarships.length > 0) {

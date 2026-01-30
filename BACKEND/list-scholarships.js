@@ -28,6 +28,7 @@ async function listScholarships() {
             console.log(`   HSK Req: ${scholarship.hskRequirement}`);
             console.log(`   IELTS Req: ${scholarship.ieltsRequirement}`);
             console.log(`   Deadline: ${scholarship.deadline}`);
+            console.log(`   Image: ${scholarship.image || 'None'}`);
             if (scholarship.createdAt) {
                 console.log(`   Created: ${new Date(scholarship.createdAt).toLocaleString()}`);
             }
