@@ -6,9 +6,9 @@ const getRandomImage = (id) => {
   const images = [
     "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?auto=format&fit=crop&q=80&w=1000",
     "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1462536943532-57a629f6cc60?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1524178232363-1fb2b075b955?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1000"
+    "https://images.unsplash.com/photo-1521587760476-6c12a7104b6b?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000"
   ]
   return images[id?.charCodeAt(id.length - 1) % images.length] || images[0]
 }
