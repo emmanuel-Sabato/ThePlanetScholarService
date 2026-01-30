@@ -66,6 +66,11 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
     return text.substring(0, maxLength).trim() + '...'
   }
 
+  const [imgError, setImgError] = useState(false)
+  const imageUrl = (!imgError && scholarship.image && scholarship.image !== 'None')
+    ? scholarship.image
+    : getRandomImage(scholarship._id || scholarship.id)
+
   return (
     <div className={`relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group ${isExpired ? 'opacity-80' : ''}`}>
       {/* Promoted Badge */}
@@ -96,8 +101,9 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
         {/* Left Image Side */}
         <div className="relative w-full md:w-64 h-48 md:h-auto shrink-0 overflow-hidden bg-slate-100">
           <img
-            src={scholarship.image || getRandomImage(scholarship._id || scholarship.id)}
+            src={imageUrl}
             alt={programTitle}
+            onError={() => setImgError(true)}
             className={`w-full h-full object-cover transition-transform duration-500 ${!isExpired && 'group-hover:scale-105'} ${isExpired ? 'grayscale' : ''}`}
           />
           {/* University Logo Overlay */}
