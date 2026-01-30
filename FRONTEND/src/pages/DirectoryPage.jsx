@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Search, ChevronDown, Loader2, BookmarkCheck, ArrowUp } from 'lucide-react'
 import FilterBar from '../components/FilterBar'
 import ScholarshipCard from '../components/ScholarshipCard'
+import ScholarshipCTA from '../components/ScholarshipCTA'
 
 const API_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -289,6 +290,8 @@ export default function DirectoryPage() {
             Showing {((page - 1) * PAGE_SIZE) + 1}-{Math.min(page * PAGE_SIZE, filteredAndSorted.length)} of {filteredAndSorted.length} scholarships
           </div>
         )}
+
+        <ScholarshipCTA />
 
         {/* Scholarship Cards List */}
         <div className="space-y-4">
