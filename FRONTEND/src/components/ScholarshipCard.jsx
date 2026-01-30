@@ -4,14 +4,13 @@ import { MapPin, Calendar, Clock, GraduationCap, Globe, Info, Building2, Bookmar
 
 const getRandomImage = (id) => {
   const images = [
-    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1524178232363-1fb2b075b955?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1000",
     "https://images.unsplash.com/photo-1462536943532-57a629f6cc60?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1606761568499-6d2451b23c66?auto=format&fit=crop&q=80&w=1000",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=1000",
+    "https://images.unsplash.com/photo-1524178232363-1fb2b075b955?auto=format&fit=crop&q=80&w=1000",
     "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1000"
   ]
-  return images[id?.charCodeAt(0) % images.length] || images[0]
+  return images[id?.charCodeAt(id.length - 1) % images.length] || images[0]
 }
 
 const getUniversityLogo = (universityName) => {
@@ -67,7 +66,9 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
   }
 
   const [imgError, setImgError] = useState(false)
-  const imageUrl = (!imgError && scholarship.image && scholarship.image !== 'None')
+  const brokenId = "photo-1523050854058-8df90110c9f1"
+
+  const imageUrl = (!imgError && scholarship.image && scholarship.image !== 'None' && !scholarship.image.includes(brokenId))
     ? scholarship.image
     : getRandomImage(scholarship._id || scholarship.id)
 

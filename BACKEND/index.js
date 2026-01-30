@@ -85,13 +85,22 @@ async function seedScholarships() {
         const scholarshipsCollection = db.collection('scholarships');
         const count = await scholarshipsCollection.countDocuments();
 
-        // Check if existing data needs update (missing metadata or images)
+        // Check if existing data needs update (missing metadata or broken images)
         const sample = await scholarshipsCollection.findOne();
-        const needsUpdate = sample && (!sample.fundingType || !sample.image);
+        const brokenId = "photo-1523050854058-8df90110c9f1";
+        const brokenSample = await scholarshipsCollection.findOne({
+            image: { $regex: brokenId }
+        });
+
+        const needsUpdate = sample && (
+            !sample.fundingType ||
+            !sample.image ||
+            brokenSample
+        );
 
         if (count === 0 || needsUpdate) {
             if (needsUpdate) {
-                console.log('🔄 Detected missing scholarship metadata. Clearing to re-seed...');
+                console.log('🔄 Detected missing metadata or broken images. Clearing to re-seed...');
                 await scholarshipsCollection.deleteMany({});
             } else {
                 console.log('🌱 Seeding initial Scholarships...');
@@ -148,7 +157,7 @@ async function seedScholarships() {
 
             addUnis("Short-Term Program", "哈尔滨青年冰雪创新体验营 Harbin Youth Ice Innovation Experience Camp", [
                 { name: "Harbin Engineering University", location: "Harbin", image: "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop" },
-                { name: "Harbin Institute of Technology", location: "Harbin", image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=800&auto=format&fit=crop" }
+                { name: "Harbin Institute of Technology", location: "Harbin", image: "https://images.unsplash.com/photo-1541339907198-e08756ebafe1?q=80&w=800&auto=format&fit=crop" }
             ], "Chinese Language", "Scholarship", tuitionHostel);
 
             addUnis("Chinese Government Scholarship", "中国政府奖学金 Chinese Government Scholarship", [
