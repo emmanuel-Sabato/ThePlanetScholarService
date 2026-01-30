@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -84,9 +85,9 @@ async function seedScholarships() {
         const scholarshipsCollection = db.collection('scholarships');
         const count = await scholarshipsCollection.countDocuments();
 
-        // Check if existing data needs update (missing metadata)
+        // Check if existing data needs update (missing metadata or images)
         const sample = await scholarshipsCollection.findOne();
-        const needsUpdate = sample && !sample.fundingType;
+        const needsUpdate = sample && (!sample.fundingType || !sample.image);
 
         if (count === 0 || needsUpdate) {
             if (needsUpdate) {
