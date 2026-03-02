@@ -1013,6 +1013,19 @@ app.post('/api/services', isAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/services/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { _id, ...updateData } = req.body;
+        let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+        const result = await db.collection('services').updateOne(query, { $set: updateData });
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'Service not found' });
+        res.json({ message: 'Service updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update service' });
+    }
+});
+
 app.delete('/api/services/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('services').deleteOne({ id: req.params.id });
@@ -1071,6 +1084,19 @@ app.post('/api/team', isAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/team/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { _id, ...updateData } = req.body;
+        let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+        const result = await db.collection('team').updateOne(query, { $set: updateData });
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'Team member not found' });
+        res.json({ message: 'Team member updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update team member' });
+    }
+});
+
 app.delete('/api/team/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('team').deleteOne({ id: req.params.id });
@@ -1106,6 +1132,19 @@ app.post('/api/blog', isAdmin, async (req, res) => {
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create blog post' });
+    }
+});
+
+app.put('/api/blog/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { _id, ...updateData } = req.body;
+        let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+        const result = await db.collection('blog').updateOne(query, { $set: updateData });
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'Blog post not found' });
+        res.json({ message: 'Blog post updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update blog post' });
     }
 });
 
@@ -1147,6 +1186,19 @@ app.post('/api/faqs', isAdmin, async (req, res) => {
     }
 });
 
+app.put('/api/faqs/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { _id, ...updateData } = req.body;
+        let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+        const result = await db.collection('faqs').updateOne(query, { $set: updateData });
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'FAQ not found' });
+        res.json({ message: 'FAQ updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update FAQ' });
+    }
+});
+
 app.delete('/api/faqs/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('faqs').deleteOne({ id: req.params.id });
@@ -1182,6 +1234,19 @@ app.post('/api/testimonials', isAdmin, async (req, res) => {
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create testimonial' });
+    }
+});
+
+app.put('/api/testimonials/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { _id, ...updateData } = req.body;
+        let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
+        const result = await db.collection('testimonials').updateOne(query, { $set: updateData });
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'Testimonial not found' });
+        res.json({ message: 'Testimonial updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update testimonial' });
     }
 });
 
