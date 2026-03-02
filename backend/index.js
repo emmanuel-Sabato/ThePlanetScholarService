@@ -533,7 +533,9 @@ app.use(session({
         client: client,
         dbName: 'scholarsite',
         collectionName: 'sessions',
-        ttl: 24 * 60 * 60 // 1 day
+        ttl: 24 * 60 * 60, // 1 day
+        autoRemove: 'native',
+        touchAfter: 24 * 3600 // Only update session once in 24 hours unless data changes
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
