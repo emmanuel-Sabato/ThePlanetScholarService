@@ -16,6 +16,16 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Root health check
+app.get('/', (req, res) => {
+    res.json({
+        status: 'online',
+        message: 'The Planet Scholar API is operational',
+        timestamp: new Date(),
+        version: '1.1.0'
+    });
+});
+
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI;
 let db;
@@ -535,6 +545,20 @@ app.use(session({
     }
 }));
 
+// Admin Authorization Middleware
+const isAdmin = (req, res, next) => {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+        const userEmail = req.session.user?.email || 'Guest';
+        const userRole = req.session.user?.role || 'None';
+        console.warn(`[AUTH] Unauthorized admin access attempt. User: ${userEmail}, Role: ${userRole}, Path: ${req.path}, Method: ${req.method}`);
+        return res.status(403).json({
+            error: 'Admin access required',
+            details: 'Your session may have expired or you do not have permission for this action.'
+        });
+    }
+    next();
+};
+
 // Debug Endpoint
 app.get('/api/debug-session', (req, res) => {
     res.json({
@@ -573,7 +597,7 @@ app.get('/api/enrollment-categories', async (req, res) => {
     }
 });
 
-app.post('/api/enrollment-categories', async (req, res) => {
+app.post('/api/enrollment-categories', isAdmin, async (req, res) => {
     try {
         const newItem = req.body;
         const result = await db.collection('enrollment_categories').insertOne(newItem);
@@ -583,7 +607,7 @@ app.post('/api/enrollment-categories', async (req, res) => {
     }
 });
 
-app.put('/api/enrollment-categories/:id', async (req, res) => {
+app.put('/api/enrollment-categories/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const updatedItem = req.body;
@@ -598,7 +622,7 @@ app.put('/api/enrollment-categories/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/enrollment-categories/:id', async (req, res) => {
+app.delete('/api/enrollment-categories/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         await db.collection('enrollment_categories').deleteOne({ _id: new ObjectId(id) });
@@ -622,12 +646,35 @@ app.get('/api/enrollment-config', async (req, res) => {
     }
 });
 
-app.put('/api/enrollment-config', async (req, res) => {
+app.post('/api/admin/setup-enrollment', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
+        const settings = db.collection('system_settings');
+        const setupData = {
+            key: 'enrollment_config',
+            value: {
+                isEnrollmentActive: true,
+                allowedCategories: ['scholarship', 'training', 'internship'],
+                maxApplicationsPerUser: 5,
+                deadline: new Date(new Date().getFullYear(), 11, 31).toISOString()
+            },
+            updatedAt: new Date()
+        };
 
+        await settings.updateOne(
+            { key: 'enrollment_config' },
+            { $set: setupData },
+            { upsert: true }
+        );
+
+        res.json({ message: 'Enrollment system initialized successfully' });
+    } catch (error) {
+        console.error('[SETUP ERROR]', error);
+        res.status(500).json({ error: 'Setup failed' });
+    }
+});
+
+app.put('/api/enrollment-config', isAdmin, async (req, res) => {
+    try {
         const settings = db.collection('system_settings');
         await settings.updateOne(
             { key: 'enrollment_config' },
@@ -769,12 +816,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-app.post('/api/scholarships', upload.single('image'), async (req, res) => {
+app.post('/api/scholarships', upload.single('image'), isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.warn(`[AUTH] Unauthorized scholarship creation attempt by ${req.session.user?.email || 'Unknown'}. Role: ${req.session.user?.role || 'None'}`);
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         console.log('Received scholarship creation request');
         console.log('Body:', req.body);
         console.log('File:', req.file ? 'File present' : 'No file');
@@ -816,15 +859,15 @@ app.post('/api/scholarships', upload.single('image'), async (req, res) => {
     }
 });
 
-app.put('/api/scholarships/:id', upload.single('image'), async (req, res) => {
+app.put('/api/scholarships/:id', upload.single('image'), isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body; // Remove _id from update data if present
+        const oldItem = await db.collection('scholarships').findOne(ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id });
 
-        let imageUrl = req.body.image; // Keep existing URL by default
+        if (!oldItem) return res.status(404).json({ error: 'Scholarship not found' });
 
+        let imageUrl = oldItem.image;
         if (req.file) {
-            // Upload new image to Cloudinary
             const b64 = Buffer.from(req.file.buffer).toString('base64');
             let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
             const uploadResponse = await cloudinary.uploader.upload(dataURI, {
@@ -832,48 +875,29 @@ app.put('/api/scholarships/:id', upload.single('image'), async (req, res) => {
                 resource_type: 'auto'
             });
             imageUrl = uploadResponse.secure_url;
+        } else if (req.body.image) {
+            imageUrl = req.body.image;
         }
 
-        const updatedItem = {
+        const { _id, ...updateData } = req.body;
+        const finalUpdate = {
             ...updateData,
             image: imageUrl,
             updatedAt: new Date()
         };
 
-        // Try to update by _id (ObjectId) first, then by string id
-        let query = {};
-        try {
-            const { ObjectId } = require('mongodb');
-            query = { _id: new ObjectId(id) };
-        } catch (e) {
-            query = { id: id };
-        }
-
-        // Fallback for string IDs if ObjectId fails or not found
-        let result = await db.collection('scholarships').updateOne(query, { $set: updatedItem });
-
-        if (result.matchedCount === 0 && query._id) {
-            // If not found by ObjectId, try finding by custom string id
-            query = { id: id };
-            result = await db.collection('scholarships').updateOne(query, { $set: updatedItem });
-        }
-
-        if (result.matchedCount === 0) {
-            return res.status(404).json({ error: 'Scholarship not found' });
-        }
-
-        res.json({ message: 'Scholarship updated successfully', ...updatedItem });
+        await db.collection('scholarships').updateOne(
+            { _id: oldItem._id },
+            { $set: finalUpdate }
+        );
+        res.json({ message: 'Scholarship updated successfully' });
     } catch (error) {
-        console.error('Error updating scholarship:', error);
-        res.status(500).json({
-            error: 'Failed to update scholarship',
-            details: error.message,
-            cloudinaryError: error
-        });
+        console.error('Update scholarship error:', error);
+        res.status(500).json({ error: 'Failed to update scholarship' });
     }
 });
 
-app.delete('/api/scholarships/:id', async (req, res) => {
+app.delete('/api/scholarships/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const force = req.query.force === 'true';
@@ -920,7 +944,7 @@ app.delete('/api/scholarships/:id', async (req, res) => {
 });
 
 // Bulk Delete Scholarships
-app.post('/api/scholarships/bulk-delete', async (req, res) => {
+app.post('/api/scholarships/bulk-delete', isAdmin, async (req, res) => {
     try {
         const { ids, force } = req.body;
         if (!Array.isArray(ids) || ids.length === 0) {
@@ -975,7 +999,7 @@ app.get('/api/services', async (req, res) => {
     }
 });
 
-app.post('/api/services', async (req, res) => {
+app.post('/api/services', isAdmin, async (req, res) => {
     try {
         const newItem = {
             ...req.body,
@@ -989,7 +1013,7 @@ app.post('/api/services', async (req, res) => {
     }
 });
 
-app.delete('/api/services/:id', async (req, res) => {
+app.delete('/api/services/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('services').deleteOne({ id: req.params.id });
         if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
@@ -1013,7 +1037,7 @@ app.get('/api/mission', async (req, res) => {
     }
 });
 
-app.put('/api/mission', async (req, res) => {
+app.put('/api/mission', isAdmin, async (req, res) => {
     try {
         await db.collection('mission').deleteMany({});
         const result = await db.collection('mission').insertOne(req.body);
@@ -1033,7 +1057,7 @@ app.get('/api/team', async (req, res) => {
     }
 });
 
-app.post('/api/team', async (req, res) => {
+app.post('/api/team', isAdmin, async (req, res) => {
     try {
         const newItem = {
             ...req.body,
@@ -1047,7 +1071,7 @@ app.post('/api/team', async (req, res) => {
     }
 });
 
-app.delete('/api/team/:id', async (req, res) => {
+app.delete('/api/team/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('team').deleteOne({ id: req.params.id });
         if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
@@ -1071,7 +1095,7 @@ app.get('/api/blog', async (req, res) => {
     }
 });
 
-app.post('/api/blog', async (req, res) => {
+app.post('/api/blog', isAdmin, async (req, res) => {
     try {
         const newItem = {
             ...req.body,
@@ -1085,7 +1109,7 @@ app.post('/api/blog', async (req, res) => {
     }
 });
 
-app.delete('/api/blog/:id', async (req, res) => {
+app.delete('/api/blog/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('blog').deleteOne({ id: req.params.id });
         if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
@@ -1109,7 +1133,7 @@ app.get('/api/faqs', async (req, res) => {
     }
 });
 
-app.post('/api/faqs', async (req, res) => {
+app.post('/api/faqs', isAdmin, async (req, res) => {
     try {
         const newItem = {
             ...req.body,
@@ -1123,7 +1147,7 @@ app.post('/api/faqs', async (req, res) => {
     }
 });
 
-app.delete('/api/faqs/:id', async (req, res) => {
+app.delete('/api/faqs/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('faqs').deleteOne({ id: req.params.id });
         if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
@@ -1147,7 +1171,7 @@ app.get('/api/testimonials', async (req, res) => {
     }
 });
 
-app.post('/api/testimonials', async (req, res) => {
+app.post('/api/testimonials', isAdmin, async (req, res) => {
     try {
         const newItem = {
             ...req.body,
@@ -1161,7 +1185,7 @@ app.post('/api/testimonials', async (req, res) => {
     }
 });
 
-app.delete('/api/testimonials/:id', async (req, res) => {
+app.delete('/api/testimonials/:id', isAdmin, async (req, res) => {
     try {
         let result = await db.collection('testimonials').deleteOne({ id: req.params.id });
         if (result.deletedCount === 0 && ObjectId.isValid(req.params.id)) {
@@ -1198,11 +1222,8 @@ app.get('/api/notices', async (req, res) => {
     }
 });
 
-app.get('/api/notices/admin', async (req, res) => {
+app.get('/api/notices/admin', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const items = await db.collection('notices').find().sort({ createdAt: -1 }).toArray();
         res.json(items);
     } catch (error) {
@@ -1210,12 +1231,8 @@ app.get('/api/notices/admin', async (req, res) => {
     }
 });
 
-app.post('/api/notices', async (req, res) => {
+app.post('/api/notices', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.warn(`[AUTH] Unauthorized notice creation attempt by ${req.session.user?.email || 'Unknown'}. Role: ${req.session.user?.role || 'None'}`);
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const newItem = {
             ...req.body,
             id: `notice-${Date.now()}`,
@@ -1231,11 +1248,8 @@ app.post('/api/notices', async (req, res) => {
     }
 });
 
-app.put('/api/notices/:id', async (req, res) => {
+app.put('/api/notices/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         const { _id, ...updateData } = req.body;
         updateData.updatedAt = new Date();
@@ -1252,11 +1266,8 @@ app.put('/api/notices/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/notices/:id', async (req, res) => {
+app.delete('/api/notices/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         let result = await db.collection('notices').deleteOne({ id: id });
         if (result.deletedCount === 0 && ObjectId.isValid(id)) {
@@ -1281,11 +1292,8 @@ app.get('/api/dashboard-faqs', async (req, res) => {
     }
 });
 
-app.get('/api/dashboard-faqs/admin', async (req, res) => {
+app.get('/api/dashboard-faqs/admin', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const items = await db.collection('dashboard_faqs').find().sort({ order: 1, createdAt: -1 }).toArray();
         res.json(items);
     } catch (error) {
@@ -1293,11 +1301,8 @@ app.get('/api/dashboard-faqs/admin', async (req, res) => {
     }
 });
 
-app.post('/api/dashboard-faqs', async (req, res) => {
+app.post('/api/dashboard-faqs', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const count = await db.collection('dashboard_faqs').countDocuments();
         const newItem = {
             ...req.body,
@@ -1314,11 +1319,8 @@ app.post('/api/dashboard-faqs', async (req, res) => {
     }
 });
 
-app.put('/api/dashboard-faqs/:id', async (req, res) => {
+app.put('/api/dashboard-faqs/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         const { _id, ...updateData } = req.body;
         updateData.updatedAt = new Date();
@@ -1335,11 +1337,8 @@ app.put('/api/dashboard-faqs/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/dashboard-faqs/:id', async (req, res) => {
+app.delete('/api/dashboard-faqs/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         let result = await db.collection('dashboard_faqs').deleteOne({ id: id });
         if (result.deletedCount === 0 && ObjectId.isValid(id)) {
@@ -1444,11 +1443,8 @@ app.post('/api/surveys/submit', async (req, res) => {
     }
 });
 
-app.get('/api/surveys', async (req, res) => {
+app.get('/api/surveys', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const items = await db.collection('surveys').find().sort({ createdAt: -1 }).toArray();
         res.json(items);
     } catch (error) {
@@ -1456,12 +1452,8 @@ app.get('/api/surveys', async (req, res) => {
     }
 });
 
-app.post('/api/surveys', async (req, res) => {
+app.post('/api/surveys', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         // If setting as active, deactivate others
         if (req.body.isActive) {
             await db.collection('surveys').updateMany({}, { $set: { isActive: false } });
@@ -1479,11 +1471,8 @@ app.post('/api/surveys', async (req, res) => {
     }
 });
 
-app.put('/api/surveys/:id', async (req, res) => {
+app.put('/api/surveys/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         const { _id, ...updateData } = req.body;
 
@@ -1507,11 +1496,8 @@ app.put('/api/surveys/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/surveys/:id', async (req, res) => {
+app.delete('/api/surveys/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         let result = await db.collection('surveys').deleteOne({ id: id });
         if (result.deletedCount === 0 && ObjectId.isValid(id)) {
@@ -1564,11 +1550,8 @@ app.post('/api/surveys/:id/responses', async (req, res) => {
     }
 });
 
-app.get('/api/surveys/:id/responses', async (req, res) => {
+app.get('/api/surveys/:id/responses', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
         const { id } = req.params;
         const responses = await db.collection('survey_responses')
             .find({ surveyId: new ObjectId(id) })
@@ -1796,14 +1779,9 @@ app.put('/api/applications/:id', async (req, res) => {
 });
 
 // Toggle Re-Apply Permission (Admin only)
-app.post('/api/applications/:id/toggle-reapply', async (req, res) => {
+app.post('/api/applications/:id/toggle-reapply', isAdmin, async (req, res) => {
     try {
         console.log(`[TOGGLE RE-APPLY] Request for AppID: ${req.params.id}. Session: ${req.session.id}. User Role: ${req.session.user?.role}`);
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.log(`[TOGGLE RE-APPLY] ACCESS DENIED. Role: ${req.session.user?.role}`);
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
         const { id } = req.params;
         const query = (id.length === 24 && ObjectId.isValid(id)) ? { _id: new ObjectId(id) } : { id: id };
 
@@ -1822,12 +1800,8 @@ app.post('/api/applications/:id/toggle-reapply', async (req, res) => {
     }
 });
 
-app.delete('/api/applications/:id', async (req, res) => {
+app.delete('/api/applications/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
-
         const { id } = req.params;
 
         // Try to delete by custom id first
@@ -1854,14 +1828,9 @@ app.delete('/api/applications/:id', async (req, res) => {
 });
 
 // Download application files as ZIP
-app.get('/api/applications/:id/download-files', async (req, res) => {
+app.get('/api/applications/:id/download-files', isAdmin, async (req, res) => {
     try {
         console.log(`[DOWNLOAD FILES] ID: ${req.params.id}. Session: ${req.session.id}. Role: ${req.session.user?.role}`);
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.log(`[DOWNLOAD FILES] ACCESS DENIED. Role: ${req.session.user?.role}`);
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
-
         const { id } = req.params;
 
         // Find application by ID
@@ -2302,13 +2271,9 @@ app.put('/api/auth/profile', async (req, res) => {
 // --- User Management API (Admin only) ---
 
 // Get all users with application counts
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', isAdmin, async (req, res) => {
     try {
         console.log(`[GET /api/users] Request received. Session: ${req.session.id}. User object exists: ${!!req.session.user}. Role: ${req.session.user?.role}`);
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.log(`[GET /api/users] ACCESS DENIED. Session ID: ${req.session.id}. Role: ${req.session.user?.role}`);
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
 
         const users = await db.collection('users').aggregate([
             {
@@ -2342,18 +2307,13 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Admin create user
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
-
         const { name, email, password, role } = req.body;
+        const usersCollection = db.collection('users');
 
-        const existingUser = await db.collection('users').findOne({ email: email.toLowerCase() });
-        if (existingUser) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
+        const existing = await usersCollection.findOne({ email: email.toLowerCase() });
+        if (existing) return res.status(400).json({ error: 'User already exists' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = {
@@ -2364,7 +2324,7 @@ app.post('/api/users', async (req, res) => {
             createdAt: new Date()
         };
 
-        const result = await db.collection('users').insertOne(newUser);
+        const result = await usersCollection.insertOne(newUser);
         const { password: _, ...userWithoutPassword } = newUser;
         res.status(201).json({ ...userWithoutPassword, _id: result.insertedId });
     } catch (error) {
@@ -2374,12 +2334,8 @@ app.post('/api/users', async (req, res) => {
 });
 
 // Admin update user
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
-
         const { name, email, role, password } = req.body;
         const userId = req.params.id;
 
@@ -2407,13 +2363,9 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // Admin delete user
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', isAdmin, async (req, res) => {
     try {
         console.log(`[DELETE USER] ID: ${req.params.id}. Session: ${req.session.id}. Role: ${req.session.user?.role}`);
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            console.log(`[DELETE USER] ACCESS DENIED. Role: ${req.session.user?.role}`);
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
 
         const userId = req.params.id;
         const userToDelete = await db.collection('users').findOne({ _id: new ObjectId(userId) });
@@ -2436,11 +2388,8 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // Get specific user's applications
-app.get('/api/users/:id/applications', async (req, res) => {
+app.get('/api/users/:id/applications', isAdmin, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
 
         const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -2556,11 +2505,7 @@ app.post('/api/messages', async (req, res) => {
 });
 
 // Get admin conversation list (users who have messages)
-app.get('/api/admin/conversations', async (req, res) => {
-    if (!req.session.user || req.session.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Forbidden' });
-    }
-
+app.get('/api/admin/conversations', isAdmin, async (req, res) => {
     try {
         const messagesCollection = db.collection('messages');
         const usersCollection = db.collection('users');
