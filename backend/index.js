@@ -14,6 +14,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 
 const app = express();
+app.set('trust proxy', 1); // Essential for Vercel sessions
 const PORT = process.env.PORT || 3000;
 
 // Root health check
@@ -520,6 +521,11 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+    if (!req.body) req.body = {};
+    next();
+});
 
 const isProduction = process.env.NODE_ENV === 'production';
 console.log(`[AUTH] Environment: ${process.env.NODE_ENV || 'development'}, isProduction: ${isProduction}`);
@@ -553,9 +559,11 @@ const isAdmin = (req, res, next) => {
         const userEmail = req.session.user?.email || 'Guest';
         const userRole = req.session.user?.role || 'None';
         console.warn(`[AUTH] Unauthorized admin access attempt. User: ${userEmail}, Role: ${userRole}, Path: ${req.path}, Method: ${req.method}`);
+        console.warn(`[AUTH] Headers: Origin: ${req.headers.origin}, Referer: ${req.headers.referer}, Cookie: ${req.headers.cookie ? 'Present' : 'Missing'}`);
         return res.status(403).json({
             error: 'Admin access required',
-            details: 'Your session may have expired or you do not have permission for this action.'
+            details: 'Your session may have expired or you do not have permission for this action.',
+            authDebug: { user: userEmail, role: userRole }
         });
     }
     next();
@@ -881,7 +889,7 @@ app.put('/api/scholarships/:id', upload.single('image'), isAdmin, async (req, re
             imageUrl = req.body.image;
         }
 
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         const finalUpdate = {
             ...updateData,
             image: imageUrl,
@@ -1018,7 +1026,7 @@ app.post('/api/services', isAdmin, async (req, res) => {
 app.put('/api/services/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
         const result = await db.collection('services').updateOne(query, { $set: updateData });
         if (result.matchedCount === 0) return res.status(404).json({ error: 'Service not found' });
@@ -1089,7 +1097,7 @@ app.post('/api/team', isAdmin, async (req, res) => {
 app.put('/api/team/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
         const result = await db.collection('team').updateOne(query, { $set: updateData });
         if (result.matchedCount === 0) return res.status(404).json({ error: 'Team member not found' });
@@ -1140,7 +1148,7 @@ app.post('/api/blog', isAdmin, async (req, res) => {
 app.put('/api/blog/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
         const result = await db.collection('blog').updateOne(query, { $set: updateData });
         if (result.matchedCount === 0) return res.status(404).json({ error: 'Blog post not found' });
@@ -1191,7 +1199,7 @@ app.post('/api/faqs', isAdmin, async (req, res) => {
 app.put('/api/faqs/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
         const result = await db.collection('faqs').updateOne(query, { $set: updateData });
         if (result.matchedCount === 0) return res.status(404).json({ error: 'FAQ not found' });
@@ -1242,7 +1250,7 @@ app.post('/api/testimonials', isAdmin, async (req, res) => {
 app.put('/api/testimonials/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { _id, ...updateData } = req.body;
+        const { _id, ...updateData } = req.body || {};
         let query = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id };
         const result = await db.collection('testimonials').updateOne(query, { $set: updateData });
         if (result.matchedCount === 0) return res.status(404).json({ error: 'Testimonial not found' });
@@ -2654,14 +2662,22 @@ app.get('/api/admin/account', async (req, res) => {
     }
 });
 
-// Start server
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`✅ Server running on http://localhost:${PORT}`);
-        console.log(`📚 Managing: Scholarships, Services, Mission, Team, Blog, FAQs, Testimonials`);
-        console.log(`📧 Email: Contact form enabled`);
+// Export for Vercel
+module.exports = app;
+
+// Start server (only if run directly, not when required as a module)
+if (require.main === module) {
+    connectDB().then(() => {
+        app.listen(PORT, () => {
+            console.log(`✅ Server running on http://localhost:${PORT}`);
+            console.log(`📚 Managing: Scholarships, Services, Mission, Team, Blog, FAQs, Testimonials`);
+            console.log(`📧 Email: Contact form enabled`);
+        });
     });
-});
+} else {
+    // When running in Vercel, connectDB needs to be called
+    connectDB().catch(err => console.error('Immediate connection failure:', err));
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
