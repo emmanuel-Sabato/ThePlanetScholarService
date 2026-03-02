@@ -98,6 +98,8 @@ export default function AdminPage() {
         program: '',
         tuition: '',
         duration: '',
+        category: '',
+        subCategory: '',
         fastTrack: false,
         isPromoted: false
     })
@@ -1260,6 +1262,8 @@ export default function AdminPage() {
                                                     funding: '',
                                                     benefits: '',
                                                     program: '',
+                                                    category: '',
+                                                    subCategory: '',
                                                     fastTrack: false,
                                                     isPromoted: false
                                                 }))
@@ -1271,6 +1275,8 @@ export default function AdminPage() {
                                                         <input type="text" required placeholder="University Name" value={scholarshipForm.university} onChange={(e) => setScholarshipForm({ ...scholarshipForm, university: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" />
                                                         <input type="text" required placeholder="Country" value={scholarshipForm.country} onChange={(e) => setScholarshipForm({ ...scholarshipForm, country: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" />
                                                         <input type="text" placeholder="Location (City, State)" value={scholarshipForm.location} onChange={(e) => setScholarshipForm({ ...scholarshipForm, location: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                                                        <input type="text" placeholder="Category (e.g. Science, Arts)" value={scholarshipForm.category} onChange={(e) => setScholarshipForm({ ...scholarshipForm, category: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                                                        <input type="text" placeholder="Sub-category" value={scholarshipForm.subCategory} onChange={(e) => setScholarshipForm({ ...scholarshipForm, subCategory: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500" />
                                                     </div>
                                                 </div>
 
@@ -3375,7 +3381,10 @@ export default function AdminPage() {
                                 <tbody className="divide-y divide-slate-100">
                                     {surveyResponses.map((res) => (
                                         <tr key={res._id || res.id} className="hover:bg-slate-50/50">
-                                            <td className="px-6 py-4 font-medium text-slate-900">{res.email}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">{res.userName || 'Unknown'}</div>
+                                                <div className="text-xs text-slate-500">{res.email || res.userEmail}</div>
+                                            </td>
                                             <td className="px-6 py-4 text-slate-500">{new Date(res.submittedAt).toLocaleDateString()}</td>
                                             {selectedSurvey?.questions?.map((q) => {
                                                 const ans = res.responses?.find(r => r.questionId === q.id);

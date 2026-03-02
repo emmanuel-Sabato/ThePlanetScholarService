@@ -1613,9 +1613,10 @@ app.post('/api/surveys/:id/responses', async (req, res) => {
         const result = await db.collection('survey_responses').insertOne({
             surveyId: new ObjectId(id),
             userId: req.session.user._id || req.session.user.id,
-            userEmail: req.session.user.email,
-            responses: responses,
-            submittedAt: new Date()
+            userName: req.session.user.name,
+            email: req.session.user.email,
+            submittedAt: new Date(),
+            responses: responses
         });
 
         res.status(201).json({ message: 'Survey submitted successfully', id: result.insertedId });
