@@ -1,0 +1,57 @@
+[
+  {
+    "id": "mit-stem-excellence",
+    "title": "MIT STEM Excellence Scholarship",
+    "country": "United States",
+    "degree": "Bachelor's",
+    "field": "Engineering & Technology",
+    "deadline": "2025-02-20",
+    "description": "Designed for high-achieving students pursuing undergraduate STEM degrees, with emphasis on innovation and research.",
+    "eligibility": "Open to first-year applicants globally with strong math and science backgrounds and community engagement.",
+    "benefits": "Partial tuition coverage, $10,000 research grant, and mentorship with MIT faculty."
+  },
+  {
+    "id": "toronto-global-health",
+    "title": "University of Toronto Global Health Award",
+    "country": "Canada",
+    "degree": "PhD",
+    "field": "Public Health",
+    "deadline": "2025-04-05",
+    "description": "Supports doctoral candidates driving research in global health equity and public policy interventions.",
+    "eligibility": "Applicants must hold a relevant master's degree and provide a research proposal aligned with global health.",
+    "benefits": "Full tuition, CAD $25,000 annual stipend, conference travel support, and health insurance."
+  },
+  {
+    "id": "melbourne-research",
+    "title": "University of Melbourne Research Scholarship",
+    "country": "Australia",
+    "degree": "Master's",
+    "field": "Science & Innovation",
+    "deadline": "2025-05-10",
+    "description": "Funding for postgraduate research students focusing on climate resilience and sustainable innovation.",
+    "eligibility": "International students with a research proposal and supervisor endorsement.",
+    "benefits": "Tuition waiver, $10,000 living allowance, and access to innovation labs."
+  },
+  {
+    "id": "sciencespo-social-impact",
+    "title": "Sciences Po Social Impact Grant",
+    "country": "France",
+    "degree": "Bachelor's",
+    "field": "Social Sciences",
+    "deadline": "2025-03-30",
+    "description": "Encourages undergraduates committed to social justice, civic engagement, and public policy solutions.",
+    "eligibility": "Students with evidence of community leadership and strong academic performance.",
+    "benefits": "€12,000 tuition support, language courses, and internship placement assistance."
+  },
+  {
+    "id": "cape-town-innovation",
+    "title": "University of Cape Town Innovation Scholarship",
+    "country": "South Africa",
+    "degree": "Master's",
+    "field": "Design & Innovation",
+    "deadline": "2025-06-01",
+    "description": "Celebrates creative thinkers working on design solutions that improve infrastructure and community wellbeing.",
+    "eligibility": "Portfolio submission required; open to international applicants with a design background.",
+    "benefits": "Partial tuition, housing support, and access to innovation incubators."
+  }
+]

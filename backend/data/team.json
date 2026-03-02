@@ -1,0 +1,30 @@
+[
+    {
+        "id": "elena-park",
+        "name": "Dr. Elena Park",
+        "role": "Founder & Lead Advisor",
+        "bio": "Former admissions officer with 12+ years guiding global scholars.",
+        "image": null
+    },
+    {
+        "id": "michael-chen",
+        "name": "Michael Chen",
+        "role": "Visa Support Specialist",
+        "bio": "Helps applicants navigate documentation and interviews confidently.",
+        "image": null
+    },
+    {
+        "id": "fatima-al-hashimi",
+        "name": "Fatima Al-Hashimi",
+        "role": "Essay Coach",
+        "bio": "Expert in storytelling and persuasive writing for competitive awards.",
+        "image": null
+    },
+    {
+        "id": "shami-developer",
+        "name": "Shami Developer",
+        "role": "Software Developer",
+        "bio": "Full-stack developer specializing in web design and mobile app development.",
+        "image": "My-Image.jpg"
+    }
+]
