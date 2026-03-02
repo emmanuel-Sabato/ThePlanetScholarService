@@ -503,7 +503,9 @@ app.use(cors({
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'https://theplanetscholarservice.vercel.app',
-        'https://backend-tau-lime-64.vercel.app'
+        'https://backend-tau-lime-64.vercel.app',
+        'https://www.thepsapplyedu.org',
+        'https://thepsapplyedu.org'
     ],
     credentials: true
 }));
@@ -769,6 +771,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 app.post('/api/scholarships', upload.single('image'), async (req, res) => {
     try {
+        if (!req.session.user || req.session.user.role !== 'admin') {
+            console.warn(`[AUTH] Unauthorized scholarship creation attempt by ${req.session.user?.email || 'Unknown'}. Role: ${req.session.user?.role || 'None'}`);
+            return res.status(403).json({ error: 'Admin access required' });
+        }
         console.log('Received scholarship creation request');
         console.log('Body:', req.body);
         console.log('File:', req.file ? 'File present' : 'No file');
@@ -1207,6 +1213,7 @@ app.get('/api/notices/admin', async (req, res) => {
 app.post('/api/notices', async (req, res) => {
     try {
         if (!req.session.user || req.session.user.role !== 'admin') {
+            console.warn(`[AUTH] Unauthorized notice creation attempt by ${req.session.user?.email || 'Unknown'}. Role: ${req.session.user?.role || 'None'}`);
             return res.status(403).json({ error: 'Admin access required' });
         }
         const newItem = {
