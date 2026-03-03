@@ -30,6 +30,7 @@ app.get('/', (req, res) => {
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI;
 let db;
+let dbPromise = null;
 const client = new MongoClient(MONGODB_URI, {
     family: 4,
     connectTimeoutMS: 30000,
@@ -38,36 +39,44 @@ const client = new MongoClient(MONGODB_URI, {
 });
 
 async function connectDB() {
-    try {
-        await client.connect();
-        db = client.db('scholarsite');
-        console.log('✅ Connected to MongoDB');
+    if (db && dbPromise) return dbPromise;
+    if (dbPromise) return dbPromise;
 
-        // System initialization guard
-        const settings = db.collection('system_settings');
-        const initFlag = await settings.findOne({ key: 'is_initialized' });
+    dbPromise = (async () => {
+        try {
+            console.log('🔌 Connecting to MongoDB...');
+            await client.connect();
+            db = client.db('scholarsite');
+            console.log('✅ Connected to MongoDB');
 
-        if (!initFlag) {
-            console.log('🚀 System not initialized. Running first-time setup...');
-            await seedUsers();
-            await seedServices();
-            await seedTeam();
-            await seedBlog();
+            const settings = db.collection('system_settings');
+            const initFlag = await settings.findOne({ key: 'is_initialized' });
 
-            await settings.insertOne({ key: 'is_initialized', value: true, timestamp: new Date() });
-            console.log('✅ System initialization complete.');
-        } else {
-            console.log('🛡️ System already initialized. Checking for updates...');
+            if (!initFlag) {
+                console.log('🚀 System not initialized. Running first-time setup...');
+                await seedUsers();
+                await seedServices();
+                await seedTeam();
+                await seedBlog();
+                await settings.insertOne({ key: 'is_initialized', value: true, timestamp: new Date() });
+                console.log('✅ System initialization complete.');
+            } else {
+                console.log('🛡️ System already initialized. Checking for updates...');
+            }
+
+            await seedEnrollmentCategories();
+            await seedEnrollmentConfig();
+            await seedScholarships();
+
+            return db;
+        } catch (error) {
+            console.error('❌ MongoDB connection error:', error);
+            dbPromise = null;
+            throw error;
         }
+    })();
 
-        // Always check for category and scholarship updates/seeding
-        await seedEnrollmentCategories();
-        await seedEnrollmentConfig();
-        await seedScholarships();
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        process.exit(1);
-    }
+    return dbPromise;
 }
 
 // Seeding Users (Admin)
@@ -522,6 +531,26 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Database readiness middleware
+const ensureDB = async (req, res, next) => {
+    if (db) return next();
+
+    console.log(`[DB] Awaiting connection for ${req.method} ${req.url}...`);
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(503).json({
+            error: 'Database connection unavailable',
+            details: error.message,
+            technical: 'Ensure MongoDB Atlas IP whitelist is set to 0.0.0.0/0 for Vercel'
+        });
+    }
+};
+
+app.use(ensureDB);
+
 app.use((req, res, next) => {
     if (!req.body) req.body = {};
     next();
