@@ -153,14 +153,14 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
 
           {/* Metadata Row with Icons */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 mb-4">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5" title="Degree Level">
               <GraduationCap className="w-4 h-4 text-slate-400" />
-              <span>{scholarship.degree || 'Degree'}</span>
+              <span>{scholarship.studyLevel || scholarship.level || scholarship.degree || 'Degree'}</span>
             </div>
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-slate-400" />
-              <span>Full time</span>
+              <span>{scholarship.programType || 'Full time'}</span>
             </div>
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
@@ -170,12 +170,12 @@ export default function ScholarshipCard({ scholarship, isPromoted = false, onBoo
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-slate-400" />
-              <span>On-Campus</span>
+              <span>{scholarship.programMode || 'On-Campus'}</span>
             </div>
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
               <Globe className="w-4 h-4 text-slate-400" />
-              <span>English</span>
+              <span>{scholarship.language || 'English'}</span>
             </div>
           </div>
 

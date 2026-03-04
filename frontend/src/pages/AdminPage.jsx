@@ -94,12 +94,15 @@ export default function AdminPage() {
         language: 'English',
         level: '',
         funding: '',
-        benefits: '',
+        // Consistent with enrollment flow
+        studyLevel: '',
+        fundingType: '',
+        scholarshipBenefits: '',
         program: '',
-        tuition: '',
-        duration: '',
         category: '',
         subCategory: '',
+        tuition: '',
+        duration: '',
         fastTrack: false,
         isPromoted: false
     })
@@ -569,14 +572,22 @@ export default function AdminPage() {
                 url = `${API_URL}/${endpoint}/${editMode}`;
             }
 
-            if (endpoint === 'scholarships' && data.image instanceof File) {
+            if (endpoint === 'scholarships') {
                 const formData = new FormData();
                 Object.keys(data).forEach(key => {
-                    formData.append(key, data[key]);
+                    if (key === 'image' && data[key] instanceof File) {
+                        formData.append('image', data[key]);
+                    } else if (data[key] !== null && data[key] !== undefined) {
+                        formData.append(key, data[key]);
+                    }
                 });
-                // If editing and image is still a string (URL), we don't need to send it as file
-                // But if it's a File, it sends as binary.
-                // If it's a URL string, FormData sends it as text, which our backend sees as req.body.image
+
+                // Ensure studyLevel and fundingType are populated from old fields if missing
+                if (!formData.get('studyLevel') && data.level) formData.append('studyLevel', data.level);
+                if (!formData.get('fundingType') && data.funding) formData.append('fundingType', data.funding);
+
+                // Ensure critical fields are present
+                if (!formData.get('title')) console.warn('Sending scholarship without title');
 
                 body = formData;
             } else {
@@ -1260,10 +1271,14 @@ export default function AdminPage() {
                                                     language: 'English',
                                                     level: '',
                                                     funding: '',
-                                                    benefits: '',
+                                                    studyLevel: '',
+                                                    fundingType: '',
+                                                    scholarshipBenefits: '',
                                                     program: '',
                                                     category: '',
                                                     subCategory: '',
+                                                    tuition: '',
+                                                    duration: '',
                                                     fastTrack: false,
                                                     isPromoted: false
                                                 }))
@@ -1466,6 +1481,12 @@ export default function AdminPage() {
                                                                     programMode: 'On-Campus',
                                                                     programType: 'Full-time',
                                                                     language: 'English',
+                                                                    level: '',
+                                                                    funding: '',
+                                                                    studyLevel: '',
+                                                                    fundingType: '',
+                                                                    scholarshipBenefits: '',
+                                                                    program: '',
                                                                     category: '',
                                                                     subCategory: '',
                                                                     tuition: '',

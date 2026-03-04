@@ -857,43 +857,54 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
 app.post('/api/scholarships', upload.single('image'), isAdmin, async (req, res) => {
     try {
-        console.log('Received scholarship creation request');
-        console.log('Body:', req.body);
-        console.log('File:', req.file ? 'File present' : 'No file');
+        console.log('[SCHOLARSHIP] Received creation request');
+
+        // Detailed body logging for debugging
+        const bodyKeys = Object.keys(req.body);
+        console.log(`[SCHOLARSHIP] Body keys: ${bodyKeys.join(', ')}`);
+
+        // Critical validation: check for title and university
+        if (!req.body.title || !req.body.university) {
+            console.warn('[SCHOLARSHIP] Rejected: Missing required fields (title/university)');
+            return res.status(400).json({
+                error: 'Missing required fields',
+                details: 'Scholarship title and University name are required.'
+            });
+        }
 
         let imageUrl = '';
-
         if (req.file) {
-            console.log('Attempting Cloudinary upload...');
-            // Upload to Cloudinary
+            console.log('[SCHOLARSHIP] Uploading image to Cloudinary...');
             const b64 = Buffer.from(req.file.buffer).toString('base64');
             let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
             const uploadResponse = await cloudinary.uploader.upload(dataURI, {
                 folder: 'scholarships',
                 resource_type: 'auto'
             });
-            console.log('Cloudinary upload success:', uploadResponse.secure_url);
             imageUrl = uploadResponse.secure_url;
-        } else if (req.body.image) {
-            // Fallback if URL is provided directly (legacy support)
+        } else if (req.body.image && typeof req.body.image === 'string' && req.body.image.startsWith('http')) {
             imageUrl = req.body.image;
         }
 
         const newItem = {
             ...req.body,
             image: imageUrl,
+            // Support both old and new field names for backward/forward compatibility
+            studyLevel: req.body.studyLevel || req.body.level || '',
+            fundingType: req.body.fundingType || req.body.funding || '',
             id: req.body.id || `scholarship-${Date.now()}`,
-            createdAt: new Date()
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
+
         const result = await db.collection('scholarships').insertOne(newItem);
-        console.log('Database insertion success');
+        console.log(`[SCHOLARSHIP] Success: Inserted document ${result.insertedId}`);
         res.status(201).json({ ...newItem, _id: result.insertedId });
     } catch (error) {
-        console.error('Error creating scholarship:', error);
+        console.error('[SCHOLARSHIP] Error creating scholarship:', error);
         res.status(500).json({
             error: 'Failed to create scholarship',
-            details: error.message,
-            cloudinaryError: error
+            details: error.message
         });
     }
 });
@@ -922,6 +933,9 @@ app.put('/api/scholarships/:id', upload.single('image'), isAdmin, async (req, re
         const finalUpdate = {
             ...updateData,
             image: imageUrl,
+            // Ensure compatibility
+            studyLevel: req.body.studyLevel || req.body.level || oldItem.studyLevel || '',
+            fundingType: req.body.fundingType || req.body.funding || oldItem.fundingType || '',
             updatedAt: new Date()
         };
 
