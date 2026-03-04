@@ -1684,6 +1684,8 @@ app.get('/api/surveys/:id/responses', isAdmin, async (req, res) => {
 
 // ========== CONTACT FORM EMAIL ==========
 app.post('/api/contact', async (req, res) => {
+    console.log(`[DEBUG CONTACT] Method: ${req.method}, Content-Type: ${req.headers['content-type']}`);
+    console.log(`[DEBUG CONTACT] Body keys: ${Object.keys(req.body || {})}`);
     try {
         const { name, email, subject, message } = req.body;
 
@@ -2232,6 +2234,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 });
 app.post('/api/auth/register', async (req, res) => {
+    console.log(`[DEBUG REGISTER] Method: ${req.method}, Content-Type: ${req.headers['content-type']}`);
+    console.log(`[DEBUG REGISTER] Body keys: ${Object.keys(req.body || {})}`);
     try {
         const {
             email,
@@ -2292,6 +2296,8 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
+    console.log(`[DEBUG LOGIN] Method: ${req.method}, Content-Type: ${req.headers['content-type']}`);
+    console.log(`[DEBUG LOGIN] Body keys: ${Object.keys(req.body || {})}`);
     try {
         const { email, password } = req.body;
 
