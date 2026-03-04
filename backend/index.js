@@ -817,7 +817,7 @@ app.post('/api/chat', async (req, res) => {
 
 app.get('/api/scholarships', async (req, res) => {
     try {
-        const items = await db.collection('scholarships').find().toArray();
+        const items = await db.collection('scholarships').find().sort({ createdAt: -1 }).toArray();
         res.json(items);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch scholarships' });

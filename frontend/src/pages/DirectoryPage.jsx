@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000/api'
     : '/api');
-const PAGE_SIZE = 10
+const PAGE_SIZE = 8
 
 const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recommended' },
@@ -23,7 +23,7 @@ export default function DirectoryPage() {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ country: '', degree: '', field: '' })
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState('recommended')
+  const [sortBy, setSortBy] = useState('newest')
   const [page, setPage] = useState(1)
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [bookmarked, setBookmarked] = useState(new Set())
