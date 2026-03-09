@@ -125,26 +125,26 @@ export default function AboutPage() {
 
         {teamMembers.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {teamMembers.map((member) => (
+            {teamMembers.map((member, index) => (
               <div
-                key={member.name}
+                key={member?.id || member?.name || index}
                 className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex items-start gap-4 mb-4">
-                  {member.image && imageMap[member.image] ? (
+                  {member?.image && imageMap[member.image] ? (
                     <img
                       src={imageMap[member.image]}
-                      alt={member.name}
+                      alt={member?.name || 'Team Member'}
                       className="h-16 w-16 rounded-full object-cover border-2 border-sky-100"
                     />
                   ) : (
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-sky-500 to-emerald-500 text-white flex items-center justify-center text-xl font-semibold border-2 border-sky-100">
-                      {member.name.charAt(0)}
+                      {(member?.name || 'T').charAt(0)}
                     </div>
                   )}
                   <div className="flex-1">
-                    <p className="text-lg font-semibold text-slate-900">{member.name}</p>
-                    <p className="text-sm text-sky-600 font-medium">{member.role}</p>
+                    <p className="text-lg font-semibold text-slate-900">{member?.name || 'Anonymous'}</p>
+                    <p className="text-sm text-sky-600 font-medium">{member?.role || 'Team Member'}</p>
                   </div>
                 </div>
                 {member.bio && (
