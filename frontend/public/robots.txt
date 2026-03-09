@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://theplanetscholar.com/sitemap.xml
+Sitemap: https://www.thepsapplyedu.org/sitemap.xml
